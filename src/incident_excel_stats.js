@@ -19,7 +19,8 @@ async function summarizeIncidentStatus(excelPath) {
     closedEvents: Number(parsed.closedEvents || 0),
     processingEvents: Number(parsed.processingEvents || 0),
     closeRate: Number(parsed.closeRate || 0),
-    uniqueAssetCount: Number(parsed.uniqueAssetCount || 0)
+    uniqueAssetCount: Number(parsed.uniqueAssetCount || 0),
+    averageContainMin: Number(parsed.averageContainMin || 0)
   };
 }
 

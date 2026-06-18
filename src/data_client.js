@@ -41,7 +41,8 @@ function applyIncidentStatusStats(reportData, stats) {
       closedEvents: Number(stats.closedEvents || 0),
       processingEvents: Number(stats.processingEvents || 0),
       closeRate: Number(stats.closeRate || 0),
-      uniqueAssetCount: Number(stats.uniqueAssetCount || 0)
+      uniqueAssetCount: Number(stats.uniqueAssetCount || 0),
+      averageContainMin: Number(stats.averageContainMin || 0)
     }
   });
 }

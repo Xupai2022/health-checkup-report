@@ -58,6 +58,7 @@ node health_report.js `
 | `riskDetails.processingEvents` | 处置中事件数 | 导出的事件表 Excel | 统计 S 列值等于 `处置中` 的事件行数 |
 | `riskDetails.closeRate` | 闭环率 | 导出的事件表 Excel | `已闭环 / 总事件数 * 100`，四舍五入为整数 |
 | `riskDetails.uniqueAssetCount` | 涉及资产数 | 导出的事件表 Excel | 取 G 列 IP 部分去重计数，格式 `ip(资产组名)` 截取 `(` 前部分 |
+| `riskDetails.averageContainMin` | 威胁平均遏制时间 | 导出的事件表 Excel | 统计 AB 列所有非空单元格的平均值，空格跳过，四舍五入为整数 |
 
 说明：
 
