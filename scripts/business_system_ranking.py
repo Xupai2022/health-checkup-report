@@ -44,16 +44,25 @@ def extract_ip(raw):
     return m.group(1) if m else None
 
 
+def _build_col_map(ws):
+    """读取表头行，返回 列名 → 列索引(0-based) 的映射"""
+    header = [normalize(cell) for cell in next(ws.iter_rows(values_only=True))]
+    return {name: i for i, name in enumerate(header) if name}
+
+
 # ─── 读取风险表 → 统一格式 ──────────────────────────────────────
 
 def parse_events(filepath):
-    """安全事件表: C列(2)=等级, G列(6)=IP"""
+    """安全事件表: 等级列, 影响资产列"""
     rows = []
     wb = load_workbook(filepath, read_only=True, data_only=True)
     ws = wb.active
+    col_map = _build_col_map(ws)
+    sev_col = col_map.get("等级")
+    ip_col = col_map.get("影响资产")
     for row in ws.iter_rows(min_row=2, values_only=True):
-        severity = normalize(row[2] if len(row) >= 3 else None)
-        raw_ip = normalize(row[6] if len(row) >= 7 else None)
+        severity = normalize(row[sev_col] if sev_col is not None and len(row) > sev_col else None)
+        raw_ip = normalize(row[ip_col] if ip_col is not None and len(row) > ip_col else None)
         ip = extract_ip(raw_ip)
         if ip and severity in SEVERITY_MAP:
             rows.append({'asset_ip': ip, 'risk_type': '事件', 'severity': SEVERITY_MAP[severity]})
@@ -61,13 +70,16 @@ def parse_events(filepath):
 
 
 def parse_weakpwds(filepath):
-    """弱口令清单: C列(2)=风险等级, J列(9)=风险资产"""
+    """弱口令清单: 风险等级列, 风险资产列"""
     rows = []
     wb = load_workbook(filepath, read_only=True, data_only=True)
     ws = wb.active
+    col_map = _build_col_map(ws)
+    sev_col = col_map.get("风险等级")
+    ip_col = col_map.get("风险资产")
     for row in ws.iter_rows(min_row=2, values_only=True):
-        severity = normalize(row[2] if len(row) >= 3 else None)
-        ip = normalize(row[9] if len(row) >= 10 else None)
+        severity = normalize(row[sev_col] if sev_col is not None and len(row) > sev_col else None)
+        ip = normalize(row[ip_col] if ip_col is not None and len(row) > ip_col else None)
         if severity in ('风险等级', '') or ip in ('主机', ''):
             continue
         ip = extract_ip(ip)
@@ -77,13 +89,16 @@ def parse_weakpwds(filepath):
 
 
 def parse_vulns(filepath):
-    """漏洞清单: C列(2)=风险等级, M列(12)=风险资产"""
+    """漏洞清单: 风险等级列, 风险资产列"""
     rows = []
     wb = load_workbook(filepath, read_only=True, data_only=True)
     ws = wb.active
+    col_map = _build_col_map(ws)
+    sev_col = col_map.get("风险等级")
+    ip_col = col_map.get("风险资产")
     for row in ws.iter_rows(min_row=2, values_only=True):
-        severity = normalize(row[2] if len(row) >= 3 else None)
-        ip = normalize(row[12] if len(row) >= 13 else None)
+        severity = normalize(row[sev_col] if sev_col is not None and len(row) > sev_col else None)
+        ip = normalize(row[ip_col] if ip_col is not None and len(row) > ip_col else None)
         if severity in ('风险等级', '') or ip in ('IP/子域名', ''):
             continue
         ip = extract_ip(ip)
@@ -115,19 +130,24 @@ def parse_assets(filepath):
     ws = wb.active
     header = [normalize(cell) for cell in next(ws.iter_rows(values_only=True))]
 
-    ip_col = biz_col = None
+    ip_col = biz_col = biz2_col = None
     for i, name in enumerate(header):
         if name in ('IP地址', '风险资产'):
             ip_col = i
         if name in ('所属业务',):
             biz_col = i
+        if name in ('资产组名',):
+            biz2_col = i
 
-    if ip_col is None or biz_col is None:
+    if ip_col is None or (biz_col is None and biz2_col is None):
         return _IP_TO_SYSTEM_FALLBACK
 
     for row in ws.iter_rows(min_row=2, values_only=True):
         ip = normalize(row[ip_col] if len(row) > ip_col else '')
-        biz = normalize(row[biz_col] if len(row) > biz_col else '')
+        # 优先读"所属业务"，没有的话读"资产组名"
+        biz = normalize(row[biz_col] if biz_col is not None and len(row) > biz_col else '')
+        if not biz and biz2_col is not None:
+            biz = normalize(row[biz2_col] if len(row) > biz2_col else '')
         if ip and biz and ip not in ('未知', '') and biz not in ('未知', '', '未归类组'):
             mapping[ip] = biz
 
