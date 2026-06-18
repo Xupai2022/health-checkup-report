@@ -4,10 +4,6 @@ const fs = require('fs/promises');
 const path = require('path');
 
 const DATA_FIELD_MAP = {
-  'assets.total': 'assets.total',
-  'assets.core': 'assets.core',
-  'assets.retire': 'assets.retire',
-  'assets.review': 'assets.review',
   'ops.devices-v': 'ops.devices',
   'ops.sangfor-v': 'ops.sangfor',
   'ops.log_reduce-v': 'ops.logReduce',
@@ -17,7 +13,7 @@ const DATA_FIELD_MAP = {
 };
 
 const SECTION_RENDERERS = {
-  'assets.summary': renderAssetsSummary,
+  'assetLedger.summary': renderAssetLedgerSummary,
   'riskOverview.summary': renderRiskOverviewSummary
 };
 
@@ -37,9 +33,9 @@ async function renderReportToFile({ templatePath, outputDir, reportData }) {
   return {
     ok: true,
     html_path: outputPath,
-    customer: reportData.report.customerName,
-    start: reportData.report.startDate,
-    end: reportData.report.endDate
+    customer: getProjectBackground(reportData).customerName,
+    start: getProjectBackground(reportData).startDate,
+    end: getProjectBackground(reportData).endDate
   };
 }
 
@@ -64,11 +60,11 @@ function replaceHandlebarsTokens(html, data) {
 }
 
 function patchKnownText(html, data) {
-  const report = data.report || {};
-  const customer = report.customerName || '';
-  const start = report.startDate || '';
-  const end = report.endDate || '';
-  const title = report.title || '安全体检报告';
+  const projectBackground = getProjectBackground(data);
+  const customer = projectBackground.customerName || '';
+  const start = projectBackground.startDate || '';
+  const end = projectBackground.endDate || '';
+  const title = projectBackground.title || '安全体检报告';
   const period = `${start} ~ ${end}`;
 
   return html
@@ -112,13 +108,13 @@ function renderRepeats(html, data) {
   });
 }
 
-function renderAssetsSummary(data) {
-  const assets = data.assets || {};
+function renderAssetLedgerSummary(data) {
+  const assetLedger = data.assetLedger || {};
   return [
-    paragraph(`【资产统计】台账资产${num(assets.total)}个，核心资产${num(assets.core)}个，7天内即将退库资产${num(assets.retiringWithin7Days)}个，待审核资产${num(assets.pendingReview)}个`),
-    paragraph(`【资产类型分布】${formatNameValueList(assets.typeDistribution)}`),
-    paragraph(`【资产防护统计】${formatNameValueList(assets.protectionDistribution)}`),
-    paragraph(`【互联网暴露资产】${formatNameValueList(assets.internetExposureDistribution)}`)
+    paragraph(`【资产统计】台账资产${displayValue(assetLedger.manage_asset)}个，核心资产${displayValue(assetLedger.core_asset)}个，退库资产${displayValue(assetLedger.eliminate_asset)}个，待审核资产${displayValue(assetLedger.approve_asset)}个`),
+    paragraph(`【资产类型分布】${formatNameValueList(assetLedger.typeDistribution)}`),
+    paragraph(`【资产防护统计】${formatNameValueList(assetLedger.protectionDistribution)}`),
+    paragraph(`【互联网暴露资产】${formatNameValueList(assetLedger.internetExposureDistribution)}`)
   ].join('');
 }
 
@@ -152,6 +148,10 @@ function num(value) {
   return escapeHtml(String(value === undefined || value === null ? 0 : value));
 }
 
+function displayValue(value) {
+  return escapeHtml(String(value === undefined || value === null ? '暂无数据' : value));
+}
+
 function formatNameValueList(items) {
   if (!Array.isArray(items) || !items.length) {
     return '暂无数据';
@@ -177,18 +177,25 @@ function injectReportData(html, data) {
 }
 
 function buildOutputFilename(data) {
-  const report = data.report || {};
-  const raw = `${report.customerName || '客户'}_${report.startDate || 'start'}_${report.endDate || 'end'}_安全体检报告.html`;
+  const projectBackground = getProjectBackground(data);
+  const raw = `${projectBackground.customerName || '客户'}_${projectBackground.startDate || 'start'}_${projectBackground.endDate || 'end'}_安全体检报告.html`;
   return raw.replace(/[\\/:*?"<>|]/g, '_');
 }
 
 function getPath(obj, keyPath) {
-  return keyPath.split('.').reduce((current, key) => {
+  const normalizedPath = keyPath.startsWith('report.')
+    ? `projectBackground.${keyPath.slice('report.'.length)}`
+    : keyPath;
+  return normalizedPath.split('.').reduce((current, key) => {
     if (current && Object.prototype.hasOwnProperty.call(current, key)) {
       return current[key];
     }
     return undefined;
   }, obj);
+}
+
+function getProjectBackground(data) {
+  return data.projectBackground || data.report || {};
 }
 
 function escapeHtml(value) {

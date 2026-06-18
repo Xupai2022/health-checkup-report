@@ -5,12 +5,11 @@
   "description": "Generate customer security health checkup HTML reports from SOAR/XDR data.",
   "main": "health_report.js",
   "scripts": {
-    "generate": "node health_report.js generate",
-    "check": "node --check health_report.js && node --check src/args.js && node --check src/data_client.js && node --check src/mock_data.js && node --check src/template_renderer.js && node --check tests/renderer.test.js",
-    "test": "node tests/renderer.test.js"
+    "generate": "node health_report.js",
+    "check": "node --check health_report.js && node --check src/args.js && node --check src/data_client.js && node --check src/incident_excel_stats.js && node --check src/mock_data.js && node --check src/template_renderer.js && node --check src/xdr_asset_client.js && node --check tests/data_client.test.js && node --check tests/renderer.test.js && node --check tests/xdr_asset_client.test.js",
+    "test": "node tests/data_client.test.js && node tests/renderer.test.js && node tests/xdr_asset_client.test.js"
   },
   "engines": {
     "node": ">=18"
   }
 }
-

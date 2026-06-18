@@ -16,8 +16,8 @@
 
 ```js
 {
-  report: {},
-  assets: {},
+  projectBackground: {},
+  assetLedger: {},
   riskOverview: {},
   threatOps: {},
   threatPrevention: {
@@ -28,7 +28,7 @@
 }
 ```
 
-字段命名使用英文 camelCase。HTML 属性里的路径也使用同样名字，例如 `data-field="assets.total"`。
+字段命名使用英文 camelCase。HTML 属性里的路径也使用同样名字，例如 `data-field="assetLedger.approve_asset"`。
 
 ## 3. 四种模板标记
 
@@ -37,8 +37,8 @@
 用于单个文本值，适合标题、客户名、日期、评级、普通段落里的变量。
 
 ```html
-<title>{{ report.title }} - {{ report.customerName }}</title>
-<p class="sub">{{ report.customerName }} · {{ report.startDate }} ~ {{ report.endDate }}</p>
+<title>{{ projectBackground.title }} - {{ projectBackground.customerName }}</title>
+<p class="sub">{{ projectBackground.customerName }} · {{ projectBackground.startDate }} ~ {{ projectBackground.endDate }}</p>
 ```
 
 规则：
@@ -52,7 +52,7 @@
 用于页面结构固定、只替换节点文本的 KPI 或短文本。
 
 ```html
-<div class="sr-kpi-v" data-field="assets.total">{{ assets.total }}</div>
+<div class="sr-kpi-v" data-field="assetLedger.approve_asset">{{ assetLedger.approve_asset }}</div>
 <b data-field="threatOps.highEvents">{{ threatOps.highEvents }}</b>
 ```
 
@@ -101,7 +101,7 @@
 
 ```js
 var reportData = window.SECURITY_REPORT_DATA || {};
-var assetTypes = reportData.assets.typeDistribution || [];
+var assetTypes = reportData.assetLedger.typeDistribution || [];
 ```
 
 规则：
@@ -117,30 +117,30 @@ var assetTypes = reportData.assets.typeDistribution || [];
 
 动态字段：
 
-- `report.title`
-- `report.customerName`
-- `report.startDate`
-- `report.endDate`
-- `report.dataMode`
+- `projectBackground.title`
+- `projectBackground.customerName`
+- `projectBackground.startDate`
+- `projectBackground.endDate`
+- `projectBackground.generatedAt`
 
 改造方式：
 
 - `<title>`、封面 `<h1>`、封面副标题使用 `{{ }}`。
 - 背景正文里的客户名和日期使用 `{{ }}`。
-- `DATA-MODE` 行使用 `{{ report.dataMode }}`，生产可隐藏或显示 `generated`。
+- 项目背景章节使用 `projectBackground.*`，不要再新增 `report.*`。
 
 ### 5.2 资产台账
 
 动态字段：
 
-- `assets.total`
-- `assets.core`
-- `assets.retiringWithin7Days`
-- `assets.pendingReview`
-- `assets.typeDistribution`
-- `assets.protectionDistribution`
-- `assets.internetExposureDistribution`
-- `assets.summaryLines`
+- `assetLedger.approve_asset`
+- `assetLedger.core_asset`
+- `assetLedger.eliminate_asset`
+- `assetLedger.manage_asset`
+- `assetLedger.typeDistribution`
+- `assetLedger.protectionDistribution`
+- `assetLedger.internetExposureDistribution`
+- `assetLedger.summaryLines`
 
 改造方式：
 
@@ -149,7 +149,7 @@ var assetTypes = reportData.assets.typeDistribution || [];
 - 下方 “【资产统计】...” 这类段落统一改为：
 
 ```html
-<div data-section="assets.summary"></div>
+<div data-section="assetLedger.summary"></div>
 ```
 
 ### 5.3 风险总览
@@ -281,7 +281,7 @@ var assetTypes = reportData.assets.typeDistribution || [];
 
 | data-chart | 数据路径 | 处理方式 |
 | --- | --- | --- |
-| `slot-asset-stats` | `assets.*` | KPI + 三个资产分布图 |
+| `slot-asset-stats` | `assetLedger.*` | KPI + 三个资产分布图 |
 | `slot-risk-overview` | `riskOverview.*` | 总览 KPI + 评分/链路图 |
 | `slot-top5-risk` | `riskOverview.topRiskAssets` | 图表 + 表格同源 |
 | `slot-threat-ops` | `threatOps.*` | 运营总览图 |
@@ -337,4 +337,3 @@ var assetTypes = reportData.assets.typeDistribution || [];
 6. 内网漏洞与弱密码。
 7. 图表 JS 逐个改为读 `window.SECURITY_REPORT_DATA`。
 8. 删除 renderer 里的过渡兼容替换。
-

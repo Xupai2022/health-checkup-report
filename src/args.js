@@ -2,7 +2,7 @@
 
 function parseArgs(argv) {
   const args = [...argv];
-  const command = args.shift();
+  const command = args[0] && !args[0].startsWith('--') ? args.shift() : null;
   const options = {};
 
   for (let i = 0; i < args.length; i += 1) {
@@ -35,4 +35,3 @@ module.exports = {
   parseArgs,
   requireArgs
 };
-

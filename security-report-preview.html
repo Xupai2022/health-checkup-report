@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="report-data-mode" content="mock">
-<title>首次安全体检报告 - {{ report.customerName }}</title>
+<title>首次安全体检报告 - {{ projectBackground.customerName }}</title>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 <style>
 :root {
@@ -316,38 +316,38 @@ body{font-family:var(--seer-font-family);background:var(--bg);font-size:14px;-we
 <header class="sr-cover" id="report-top">
   <div class="sr-cover-badge">安全体检报告 · 设计预览稿</div>
   <h1>首次安全体检报告</h1>
-  <p class="sub">{{ report.customerName }} · {{ report.startDate }} ~ {{ report.endDate }}</p>
+  <p class="sub">{{ projectBackground.customerName }} · {{ projectBackground.startDate }} ~ {{ projectBackground.endDate }}</p>
   <p class="sub muted" style="margin-top:8px;font-size:12px">DATA-MODE: mock · 示例数据仅供视觉评审，生产环境由开发注入真实数据</p>
 </header>
 
 <section class="sr-section" id="sec-background">
   <h2 class="sr-h1">1. 项目背景</h2>
-  <p class="sr-p">随着信息化与 AI 技术普及，企业业务系统复杂度不断提升，各类隐藏的安全漏洞、配置隐患难以靠日常运维及时发现，极易造成业务中断、数据泄露和经济损失。深信服与「{{ report.customerName }}」协同构建 AI 深度赋能、运营服务辅助、SaaS 敏捷交付、低成本有实效的安全运营体系，为「{{ report.customerName }}」的数智化转型保驾护航。</p>
+  <p class="sr-p">随着信息化与 AI 技术普及，企业业务系统复杂度不断提升，各类隐藏的安全漏洞、配置隐患难以靠日常运维及时发现，极易造成业务中断、数据泄露和经济损失。深信服与「{{ projectBackground.customerName }}」协同构建 AI 深度赋能、运营服务辅助、SaaS 敏捷交付、低成本有实效的安全运营体系，为「{{ projectBackground.customerName }}」的数智化转型保驾护航。</p>
   <p class="sr-p">安全体检服务是针对贵公司业务系统的安全状况进行深度安全运营与风险评估，精准定位安全隐患与防护薄弱点，并配套整改方案与落地指导，帮助企业快速完成系统加固，提升整体安全防护能力。</p>
   <p class="sr-p">本次体检共含两项：<strong>威胁运营</strong>与<strong>威胁预防</strong>。威胁运营通过 XDR 平台、AI 智能数据解析、告警分析研判结合 7×24H 专家快速响应遏制，保障核心资产安全事件快速闭环；威胁预防通过内外部安全组件协同，在事前帮助客户发现互联网业务与内网资产的风险。本次体检优先关注脆弱性风险，含暴露面、软件漏洞、弱密码等。</p>
-  <p class="sr-p muted">以下是在 {{ report.startDate }} ~ {{ report.endDate }} 期间的安全体检报告。</p>
+  <p class="sr-p muted">以下是在 {{ projectBackground.startDate }} ~ {{ projectBackground.endDate }} 期间的安全体检报告。</p>
 </section>
 
 <section class="sr-section" id="sec-assets">
   <h2 class="sr-h1">2. 资产台账</h2>
   <div class="sr-chart-slot sr-chart--no-hint" id="slot-asset-stats" data-chart="slot-asset-stats">
-<div class="sr-kpi-row" style="grid-template-columns:repeat(4,1fr)"><div class="sr-kpi"><div class="sr-kpi-v" data-field="assets.total">{{ assets.total }}</div><div class="sr-kpi-l">台账资产</div></div><div class="sr-kpi"><div class="sr-kpi-v" data-field="assets.core">{{ assets.core }}</div><div class="sr-kpi-l">核心资产</div></div><div class="sr-kpi"><div class="sr-kpi-v" data-field="assets.retiringWithin7Days">{{ assets.retiringWithin7Days }}</div><div class="sr-kpi-l">7天内即将退库</div></div><div class="sr-kpi"><div class="sr-kpi-v" data-field="assets.pendingReview">{{ assets.pendingReview }}</div><div class="sr-kpi-l">待审核资产</div></div></div>
-<div class="sr-asset-donut-row">
+<div class="sr-kpi-row" style="grid-template-columns:repeat(4,1fr)"><div class="sr-kpi"><div class="sr-kpi-v" data-field="assetLedger.manage_asset">{{ assetLedger.manage_asset }}</div><div class="sr-kpi-l">台账资产</div></div><div class="sr-kpi"><div class="sr-kpi-v" data-field="assetLedger.core_asset">{{ assetLedger.core_asset }}</div><div class="sr-kpi-l">核心资产</div></div><div class="sr-kpi"><div class="sr-kpi-v" data-field="assetLedger.eliminate_asset">{{ assetLedger.eliminate_asset }}</div><div class="sr-kpi-l">退库资产</div></div><div class="sr-kpi"><div class="sr-kpi-v" data-field="assetLedger.approve_asset">{{ assetLedger.approve_asset }}</div><div class="sr-kpi-l">待审核资产</div></div></div>
+  <div class="sr-asset-donut-row">
   <div class="sr-asset-donut-card">
     <h4 class="sr-asset-donut-title">资产类型分布</h4>
-    <div class="chw ch300" id="asset-type-donut"></div>
+    <div class="chw ch300" id="asset-type-donut" data-source="assetLedger.typeDistribution" data-center-label="资产总数"></div>
   </div>
   <div class="sr-asset-donut-card">
     <h4 class="sr-asset-donut-title">资产防护统计</h4>
-    <div class="chw ch300" id="asset-protection-donut"></div>
+    <div class="chw ch300" id="asset-protection-donut" data-source="assetLedger.protectionDistribution" data-center-label="资产总数"></div>
   </div>
   <div class="sr-asset-donut-card">
     <h4 class="sr-asset-donut-title">互联网暴露资产 <span class="sr-info-tip" title="具备公网可达性或互联网暴露面的资产">ⓘ</span></h4>
-    <div class="chw ch300" id="asset-exposure-donut"></div>
+    <div class="chw ch300" id="asset-exposure-donut" data-source="assetLedger.internetExposureDistribution" data-center-label="暴露资产总数"></div>
   </div>
 </div>
 </div>
-  <div data-section="assets.summary"></div>
+  <div data-section="assetLedger.summary"></div>
   <p class="sr-p muted">资产清单见 asset-inventory.xlsx，也可访问 XDR 平台首页 → 资产总览</p>
 </section>
 
@@ -385,7 +385,7 @@ body{font-family:var(--seer-font-family);background:var(--bg);font-size:14px;-we
 <section class="sr-section" id="sec-risk-detail">
   <h2 class="sr-h1">4. 风险详情</h2>
   <p class="sr-p">风险汇总如下：</p>
-  <p class="sr-p">近期处理告警共计 12,500 个，其中监测到有效安全事件 86 起（严重事件 8 起、高危事件 28 起），涉及到资产 35 个；事件遏制 72 起，有效拦截攻击 318 次；已闭环 68 起，处置中 18 起（闭环率：79%）。</p>
+  <p class="sr-p">近期处理告警共计 12,500 个，其中监测到有效安全事件 <span data-field="riskDetails.totalEvents">{{ riskDetails.totalEvents }}</span> 起（严重事件 <span data-field="riskDetails.severeEvents">{{ riskDetails.severeEvents }}</span> 起、高危事件 <span data-field="riskDetails.highEvents">{{ riskDetails.highEvents }}</span> 起），涉及到资产 35 个；事件遏制 72 起，有效拦截攻击 318 次；已闭环 <span data-field="riskDetails.closedEvents">{{ riskDetails.closedEvents }}</span> 起，处置中 <span data-field="riskDetails.processingEvents">{{ riskDetails.processingEvents }}</span> 起（闭环率：<span data-field="riskDetails.closeRate">{{ riskDetails.closeRate }}</span>%）。</p>
   <p class="sr-p">互联网业务总计发现风险 127 个（风险暴露面：42 个；漏洞：56 个；弱密码：29 个），其中高危及以上风险：23 个。</p>
   <p class="sr-p">内网核心业务总计发现风险 89 个（漏洞：68 个；弱密码：21 个），其中高危风险：15 个。</p>
 
@@ -723,46 +723,51 @@ body{font-family:var(--seer-font-family);background:var(--bg);font-size:14px;-we
   (function(){
     var COLORS = {
       server:'#1C6EFF', terminal:'#12A679', other:'#9CA3AF',
-      online:'#12A679', offline:'#FA721B', disabled:'#D3D7DE', degraded:'#9CA3AF', unprotected:'#CF171D'
+      online:'#12A679', offline:'#FA721B', disabled:'#D3D7DE', demoted:'#9CA3AF', unprotected:'#CF171D'
     };
-    var assetDonutConfigs = [
-      {
-        id:'asset-type-donut',
-        total:520,
-        centerLabel:'资产总数',
-        items:[
-          {name:'服务器', value:312, color:COLORS.server},
-          {name:'终端', value:156, color:COLORS.terminal},
-          {name:'其他', value:52, color:COLORS.other}
-        ]
-      },
-      {
-        id:'asset-protection-donut',
-        total:520,
-        centerLabel:'资产总数',
-        items:[
-          {name:'在线', value:498, color:COLORS.online},
-          {name:'离线', value:22, color:COLORS.offline},
-          {name:'已禁用', value:6, color:COLORS.disabled},
-          {name:'已降级', value:4, color:COLORS.degraded},
-          {name:'未防护资产', value:18, color:COLORS.unprotected}
-        ]
-      },
-      {
-        id:'asset-exposure-donut',
-        total:38,
-        centerLabel:'暴露资产总数',
-        items:[
-          {name:'服务器', value:28, color:COLORS.server},
-          {name:'终端', value:6, color:COLORS.terminal},
-          {name:'其他', value:4, color:COLORS.other}
-        ]
-      }
-    ];
 
-    function buildAssetDonut(cfg) {
-      var el = document.getElementById(cfg.id);
+    function getReportPath(path) {
+      var data = window.SECURITY_REPORT_DATA || {};
+      return String(path || '').split('.').reduce(function(current, key) {
+        return current && Object.prototype.hasOwnProperty.call(current, key) ? current[key] : undefined;
+      }, data);
+    }
+
+    function getAssetColor(name, index) {
+      var label = String(name || '');
+      if (label.indexOf('服务器') >= 0) return COLORS.server;
+      if (label.indexOf('终端') >= 0) return COLORS.terminal;
+      if (label.indexOf('在线') >= 0) return COLORS.online;
+      if (label.indexOf('离线') >= 0) return COLORS.offline;
+      if (label.indexOf('禁用') >= 0) return COLORS.disabled;
+      if (label.indexOf('降级') >= 0) return COLORS.demoted;
+      if (label.indexOf('未防护') >= 0) return COLORS.unprotected;
+      if (label.indexOf('其他') >= 0 || label.indexOf('其它') >= 0) return COLORS.other;
+      return ['#1C6EFF', '#12A679', '#FA721B', '#0BA7B5', '#9CA3AF'][index % 5];
+    }
+
+    function buildAssetDonutConfig(el) {
+      var rawItems = getReportPath(el.getAttribute('data-source')) || [];
+      var items = Array.isArray(rawItems) ? rawItems.map(function(item, index) {
+        return {
+          name: String(item.name || '未命名'),
+          value: Number(item.value || 0),
+          color: item.color || getAssetColor(item.name, index)
+        };
+      }) : [];
+
+      return {
+        id: el.id,
+        total: items.reduce(function(sum, item) { return sum + item.value; }, 0),
+        centerLabel: el.getAttribute('data-center-label') || '资产总数',
+        items: items
+      };
+    }
+
+    function buildAssetDonut(el) {
       if (!el || typeof echarts === 'undefined') return null;
+      var cfg = buildAssetDonutConfig(el);
+      if (!cfg.items.length) return null;
       var dense = cfg.items.length > 3;
       var legendOpt = dense ? {
         orient:'vertical', right:4, top:'52%', bottom:8,
@@ -818,12 +823,13 @@ body{font-family:var(--seer-font-family);background:var(--bg);font-size:14px;-we
       return chart;
     }
 
-    assetDonutConfigs.forEach(buildAssetDonut);
+    var assetDonutEls = ['asset-type-donut', 'asset-protection-donut', 'asset-exposure-donut']
+      .map(function(id) { return document.getElementById(id); })
+      .filter(Boolean);
+    assetDonutEls.forEach(buildAssetDonut);
 
     function resizeAssetDonuts() {
-      assetDonutConfigs.forEach(function(cfg) {
-        var el = document.getElementById(cfg.id);
-        if (!el) return;
+      assetDonutEls.forEach(function(el) {
         var inst = echarts.getInstanceByDom(el);
         if (inst) inst.resize();
       });
