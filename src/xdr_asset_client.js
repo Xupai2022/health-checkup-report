@@ -1653,15 +1653,13 @@ async function fetchDeviceList(cookieInfo, xdrBaseUrl, pageSize) {
 async function fetchThirdPartyDeviceStats(cookieInfo, xdrBaseUrl) {
   const headers = buildXdrHeaders(cookieInfo.cookieString, cookieInfo.csrfToken, xdrBaseUrl);
   const url = `https://${normalizeBaseUrl(xdrBaseUrl)}${THIRD_PARTY_DEVICE_STATS_ENDPOINT}`;
-  const response = await requestJson(url, {
-    headers,
-    body: JSON.stringify({})
-  });
+  const response = await requestJson(url, { headers });
   assertXdrApiSuccess(response, 'XDR 第三方设备统计接口');
   return response;
 }
 
-async function collectDeviceCategoryCounts(cookieInfo, xdrBaseUrl) {
+async function collectDeviceCategoryCounts(cookieInfo, xdrBaseUrl, logger) {
+  const log = typeof logger === 'function' ? logger : function() {};
   // 查询深信服设备列表
   let deviceListResponse;
   try {
@@ -1691,7 +1689,7 @@ async function collectDeviceCategoryCounts(cookieInfo, xdrBaseUrl) {
     const thirdPartyData = thirdPartyResponse && thirdPartyResponse.data && typeof thirdPartyResponse.data === 'object' ? thirdPartyResponse.data : {};
     totalThird = Number(thirdPartyData.deviceCount || 0);
   } catch (error) {
-    // 第三方设备统计接口不可用时静默跳过
+    log(`获取第三方设备数量失败: ${error.message}，将跳过第三方设备统计`);
   }
 
   return {

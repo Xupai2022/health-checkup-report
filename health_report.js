@@ -129,7 +129,7 @@ async function main() {
 
       try {
         logger('正在查询设备分类数量...');
-        const deviceCounts = await collectDeviceCategoryCounts(cookieInfo, resolved.xdrBaseUrl);
+        const deviceCounts = await collectDeviceCategoryCounts(cookieInfo, resolved.xdrBaseUrl, logger);
         reportData.riskDetails = Object.assign(reportData.riskDetails || {}, deviceCounts);
         logger(`设备总数: ${deviceCounts.devices}, AF: ${deviceCounts.af}, AES: ${deviceCounts.aes}, SIP: ${deviceCounts.sip}, STA: ${deviceCounts.sta}`);
       } catch (error) {
