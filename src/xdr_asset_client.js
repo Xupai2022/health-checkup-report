@@ -41,6 +41,7 @@ const ALERT_TABLE_SERVICE_INFO = {
 };
 const DEVICE_LIST_ENDPOINT = '/api/apex/device/v1/devices/list?viewRegionId=ffffffffffffffffffffffff&onlySelfPlatform=false';
 const DEVICE_TYPE_INFO_ENDPOINT = '/api/apex/device/v1/branch/dev_type_info?viewRegionId=ffffffffffffffffffffffff&onlySelfPlatform=false';
+const THIRD_PARTY_DEVICE_STATS_ENDPOINT = '/api/apex/thirdparty/v1/app/instance/statistics?viewRegionId=ffffffffffffffffffffffff&onlySelfPlatform=false';
 
 // devType 到分类名称的映射
 const DEVICE_TYPE_CATEGORIES = {
@@ -1649,9 +1650,25 @@ async function fetchDeviceList(cookieInfo, xdrBaseUrl, pageSize) {
   return response;
 }
 
+async function fetchThirdPartyDeviceStats(cookieInfo, xdrBaseUrl) {
+  const headers = buildXdrHeaders(cookieInfo.cookieString, cookieInfo.csrfToken, xdrBaseUrl);
+  const url = `https://${normalizeBaseUrl(xdrBaseUrl)}${THIRD_PARTY_DEVICE_STATS_ENDPOINT}`;
+  const response = await requestJson(url, {
+    headers,
+    body: JSON.stringify({})
+  });
+  assertXdrApiSuccess(response, 'XDR 第三方设备统计接口');
+  return response;
+}
+
 async function collectDeviceCategoryCounts(cookieInfo, xdrBaseUrl) {
-  // 第一步: 获取设备列表，了解各类设备数量
-  const deviceListResponse = await fetchDeviceList(cookieInfo, xdrBaseUrl, 1000);
+  // 并行查询: 深信服设备列表 + 第三方设备统计
+  const [deviceListResponse, thirdPartyResponse] = await Promise.all([
+    fetchDeviceList(cookieInfo, xdrBaseUrl, 1000),
+    fetchThirdPartyDeviceStats(cookieInfo, xdrBaseUrl)
+  ]);
+
+  // 解析深信服设备
   const data = deviceListResponse && deviceListResponse.data && typeof deviceListResponse.data === 'object' ? deviceListResponse.data : {};
   const totalSangfor = Number(data.total || 0);
   const devices = Array.isArray(data.list) ? data.list : [];
@@ -1665,18 +1682,19 @@ async function collectDeviceCategoryCounts(cookieInfo, xdrBaseUrl) {
     }
   }
 
-  // total 总设备数 = 深信服设备总数
-  // third-party 设备目前不计入此 API
+  // 解析第三方设备
+  const thirdPartyData = thirdPartyResponse && thirdPartyResponse.data && typeof thirdPartyResponse.data === 'object' ? thirdPartyResponse.data : {};
+  const totalThird = Number(thirdPartyData.deviceCount || 0);
 
   return {
-    devices: totalSangfor,
+    devices: totalSangfor + totalThird,
     sangfor: totalSangfor,
     af: categoryCounts.af,
     aes: categoryCounts.aes,
     sip: categoryCounts.sip,
     sta: categoryCounts.sta,
     other_sf: categoryCounts.other,
-    third: 0
+    third: totalThird
   };
 }
 
@@ -1720,6 +1738,7 @@ module.exports = {
   fetchAlertTableCount,
   fetchDeviceTypeInfo,
   fetchDeviceList,
+  fetchThirdPartyDeviceStats,
   collectDeviceCategoryCounts,
   DEVICE_TYPE_CATEGORIES,
   classifyDeviceType

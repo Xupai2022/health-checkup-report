@@ -1047,7 +1047,7 @@ body{font-family:var(--seer-font-family);background:var(--bg);font-size:14px;-we
       handled: 68, avoided_loss: 68, response_min: 23, close_rate: 79
     };
 
-    window.XDR_PIPELINE_DATA = Object.assign({}, DEFAULT_DATA, window.SECURITY_REPORT_DATA && window.SECURITY_REPORT_DATA.ops || {}, window.XDR_PIPELINE_DATA || {});
+    window.XDR_PIPELINE_DATA = Object.assign({}, DEFAULT_DATA, window.SECURITY_REPORT_DATA && window.SECURITY_REPORT_DATA.riskDetails || {}, window.XDR_PIPELINE_DATA || {});
 
     var FIELD_MAP = {
       'ops.devices': 'devices', 'ops.sangfor': 'sangfor', 'ops.log_reduce': 'log_reduce',

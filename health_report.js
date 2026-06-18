@@ -130,7 +130,7 @@ async function main() {
       try {
         logger('正在查询设备分类数量...');
         const deviceCounts = await collectDeviceCategoryCounts(cookieInfo, resolved.xdrBaseUrl);
-        reportData.ops = deviceCounts;
+        reportData.riskDetails = Object.assign(reportData.riskDetails || {}, deviceCounts);
         logger(`设备总数: ${deviceCounts.devices}, AF: ${deviceCounts.af}, AES: ${deviceCounts.aes}, SIP: ${deviceCounts.sip}, STA: ${deviceCounts.sta}`);
       } catch (error) {
         logger(`获取设备分类数量失败: ${error.message}，将跳过设备分类统计`);

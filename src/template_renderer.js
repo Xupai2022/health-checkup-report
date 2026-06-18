@@ -4,14 +4,14 @@ const fs = require('fs/promises');
 const path = require('path');
 
 const DATA_FIELD_MAP = {
-  'ops.devices-v': 'ops.devices',
-  'ops.sangfor-v': 'ops.sangfor',
-  'ops.af-v': 'ops.af',
-  'ops.aes-v': 'ops.aes',
-  'ops.sip-v': 'ops.sip',
-  'ops.sta-v': 'ops.sta',
-  'ops.other_sf-v': 'ops.other_sf',
-  'ops.third-v': 'ops.third',
+  'ops.devices-v': 'riskDetails.devices',
+  'ops.sangfor-v': 'riskDetails.sangfor',
+  'ops.af-v': 'riskDetails.af',
+  'ops.aes-v': 'riskDetails.aes',
+  'ops.sip-v': 'riskDetails.sip',
+  'ops.sta-v': 'riskDetails.sta',
+  'ops.other_sf-v': 'riskDetails.other_sf',
+  'ops.third-v': 'riskDetails.third',
   'ops.log_reduce-v': 'ops.logReduce',
   'ops.alert_reduce-v': 'ops.alertReduce',
   'ops.severe-v': 'ops.severe',
