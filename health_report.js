@@ -690,7 +690,7 @@ function printHelp() {
 Options:
   --customer <name>              Customer name (用于自动查询 company_id)
   --mssw-cookie-path <path>      Required for generate and MSSW data flow
-  --mssw-base-url <host>         MSSW base host (default pre.soar.sangfor.com)
+  --mssw-base-url <host>         MSSW base host (default mssw.sangfor.com.cn)
   --soar-base-url <host>         SOAR base host for EASM interfaces (default soar59.sangfor.com.cn)
   --xdr-cookie-path <path>       Optional, XDR cookie file path
   --start <YYYY-MM-DD>           Optional report start date (最大范围 30 天)

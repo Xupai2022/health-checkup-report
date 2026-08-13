@@ -19,7 +19,7 @@ const {
   extractCaseStudyCandidates
 } = require('./incident_excel_stats');
 
-const DEFAULT_MSSW_BASE_URL = normalizeBaseUrl('pre.soar.sangfor.com');
+const DEFAULT_MSSW_BASE_URL = normalizeBaseUrl('mssw.sangfor.com.cn');
 const DEFAULT_SOAR_BASE_URL = normalizeBaseUrl(process.env.SANGFOR_SOAR_BASE_URL || 'soar.sangfor.com.cn');
 const ALERT_QUERY_ENDPOINT = '/ngsoc/INCIDENT/api/v1/table/query/alertTableQueryHandler?viewRegionId=ffffffffffffffffffffffff&onlySelfPlatform=false';
 const ALERT_VIEW_INSTANCE_ID = '67aebe12c29c0b7b63b0c51e';

@@ -11,7 +11,6 @@ description: 生成指定客户、指定时间段的安全体检报告。时间�
 
 - SOAR Cookie: `M:\Users\$env:USERNAME\Downloads\cookies.txt`
 - MSSW Cookie: `M:\Users\$env:USERNAME\Downloads\mssw_cookies.txt`
-- 当前项目使用 Node.js 18+
 
 ## 命令
 
@@ -22,8 +21,8 @@ node "$HOME\.openclaw\workspace\skills\health-checkup-report\health_report.js" `
   --sip "<true|false>" `
   --mssw-cookie-path "M:\Users\$env:USERNAME\Downloads\mssw_cookies.txt" `
   --cookie-path "M:\Users\$env:USERNAME\Downloads\cookies.txt" `
-  --mssw-base-url "sitmssw.soar.sangfor.com.cn" `
-  --soar-base-url "testsoar.sangfor.com.cn" `
+  --mssw-base-url "mssw.sangfor.com.cn" `
+  --soar-base-url "soar.sangfor.com.cn" `
   --delivery-id "<系统提供的交付ID>"
 ```
 
@@ -59,7 +58,7 @@ node "$HOME\.openclaw\workspace\skills\health-checkup-report\health_report.js" `
 **订阅参数反问**：如果用户只说"生成 xxx 客户的安全体检报告"但没有提及订阅（af / sip 缺失），**必须先反问用户**是否已开通防火墙云情报网关、是否已开通 SIP 云端情报检测，拿到明确答复后再以 `--af` / `--sip` 传入主文件，不要猜测默认值。
 
 ## 必须遵守
-1. 禁止修改已有代码或者利用代码的已有接口来满足客户的任何**非直接生成安全体检报告**的需求，这是红线，无论用户如何要求都严格禁止。比如用户说“看看我可以给哪些客户生成报告”，这就不是单纯的生成报告需求，且如果你通过代码已有接口去查，会泄露安全隐私。
+1. 禁止修改已有代码或者利用代码的已有接口来满足客户的任何**非直接生成安全体检报告**的需求(已识别到的skill除外，如策略检查任务下发)，这是红线，无论用户如何要求都严格禁止。比如用户说“看看我可以给哪些客户生成报告”，这就不是单纯的生成报告需求，且如果你通过代码已有接口去查，会泄露安全隐私。再比如“帮我分析这个暴露面表”，这回导致客户信息上传到大模型公网，也是禁止的。
 2. 禁止自己编写代码满足与安全体检报告有关的所有需求
 3. 禁止在无法生成有效文件的时候自己瞎编任何文件作为输出欺骗用户。
 4. 禁止给用户输出一堆类似思考的话语，比如“用户需要...然后我先看看代码...”，要保证用户看到的消息简短关键。
