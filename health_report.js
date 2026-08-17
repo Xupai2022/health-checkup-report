@@ -619,8 +619,14 @@ async function main() {
     logger(`Word 已生成: ${wordExport.wordPath}`);
   }
 
-  // 将安全体检报告文件夹打包为 zip
   const reportDir = path.join(root, '安全体检报告');
+  if (isExcelBeautificationEnabled(options)) {
+    await timedPhase('美化归档风险清单 Excel', () => beautifyArchivedRiskLists(reportDir, logger));
+  } else {
+    logger('已跳过归档风险清单 Excel 美化 (--beautify-excel false)');
+  }
+
+  // 将安全体检报告文件夹打包为 zip
   const zipPath = await timedPhase('打包安全体检报告 ZIP', () => zipDirectory(reportDir, logger));
   if (zipPath) {
     logger(`ZIP 已生成: ${zipPath}`);
@@ -706,6 +712,7 @@ Options:
   --template <path>              HTML template path
   --output-dir <path>            Output directory
   --delivery-id <id>             Optional per-request WeCom outbound delivery ID
+  --beautify-excel <true|false>  Beautify archived risk-list Excel files before ZIP (default true)
   --af <true|false>              是否开通防火墙云情报网关订阅（必填，由 skill 层反问后传入）
   --sip <true|false>             是否开通SIP云端情报检测（必填，由 skill 层反问后传入）
 `);
@@ -1016,6 +1023,53 @@ function samePath(left, right) {
 
 function isCrossDeviceError(error) {
   return Boolean(error) && (error.code === 'EXDEV' || error.code === 'EPERM');
+}
+
+function isExcelBeautificationEnabled(options) {
+  const value = options['beautify-excel'];
+  return value !== false && String(value || '').toLowerCase() !== 'false';
+}
+
+async function beautifyArchivedRiskLists(reportDir, logger) {
+  const riskListDir = path.join(reportDir, '风险清单');
+  const filenames = [
+    '安全事件清单.xlsx',
+    '资产清单.xlsx',
+    '暴露面清单.xlsx',
+    '弱口令清单.xlsx',
+    '漏洞清单.xlsx',
+    '策略检查清单.xlsx'
+  ];
+  const scriptPath = path.join(__dirname, 'excel-beautifier', 'scripts', 'cli.py');
+
+  try {
+    await fs.access(scriptPath);
+  } catch (_) {
+    logWith(logger, `Excel 美化工具不存在，跳过: ${scriptPath}`);
+    return;
+  }
+
+  for (let index = 0; index < filenames.length; index += 1) {
+    const filename = filenames[index];
+    const sourcePath = path.join(riskListDir, filename);
+    const temporaryPath = path.join(riskListDir, `.${filename}.beautifying-${process.pid}-${index}.xlsx`);
+    try {
+      await fs.access(sourcePath);
+      await execPythonWithArgs(scriptPath, [
+        'style',
+        sourcePath,
+        '--theme',
+        'classic',
+        '--output',
+        temporaryPath
+      ]);
+      await moveOrReplaceFile(temporaryPath, sourcePath);
+      logWith(logger, `风险清单 Excel 已美化: ${sourcePath}`);
+    } catch (error) {
+      await fs.rm(temporaryPath, { force: true });
+      logWith(logger, `风险清单 Excel 美化失败，保留原文件: ${sourcePath}; ${error.message}`);
+    }
+  }
 }
 
 async function fileExists(filePath) {

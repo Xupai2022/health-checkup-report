@@ -35,6 +35,8 @@ node health_report.js `
 
 默认只输出简洁摘要；如需完整 JSON 结果，加 `--json`。
 
+生成流程会在所有数据统计和 Word 导出完成后、ZIP 打包前，使用 `excel-beautifier` 的 `classic` 主题统一美化 `安全体检报告/风险清单` 内的 Excel。默认启用；传入 `--beautify-excel false` 可跳过。单个表美化失败时会保留原文件并继续生成报告。
+
 说明：
 
 - `--mssw-cookie-path` 是当前所有报告、导表、设备统计、时间范围推导的唯一业务凭证
