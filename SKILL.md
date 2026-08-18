@@ -21,9 +21,6 @@ node "$HOME\.openclaw\workspace\skills\health-checkup-report\health_report.js" `
   --sip "<true|false>" `
   --mssw-cookie-path "M:\Users\$env:USERNAME\Downloads\mssw_cookies.txt" `
   --cookie-path "M:\Users\$env:USERNAME\Downloads\cookies.txt" `
-  --mssw-base-url "mssw.sangfor.com.cn" `
-  --soar-base-url "soar.sangfor.com.cn" `
-  --delivery-id "<系统提供的交付ID>"
 ```
 
 - `--af`：客户是否已开通**防火墙云情报网关**订阅（true/false，必填）
@@ -43,8 +40,6 @@ node "$HOME\.openclaw\workspace\skills\health-checkup-report\health_report.js" `
 
 输出给用户的是项目根目录下的 安全体检报告.zip，不要返回多余文件。
 
-若上下文中提供了“系统交付参数”的 `deliveryId`，命令必须追加 `--delivery-id "<deliveryId>"`。脚本会保留 ZIP 原名 `安全体检报告.zip`，并复制到对应的 OpenClaw outbound 子目录，由企微插件主动发送；不得自行猜测、修改或向用户展示该 ID。
-
 ## 缺参数处理
 
 生成必须有：
@@ -62,4 +57,4 @@ node "$HOME\.openclaw\workspace\skills\health-checkup-report\health_report.js" `
 2. 禁止自己编写代码满足与安全体检报告有关的所有需求
 3. 禁止在无法生成有效文件的时候自己瞎编任何文件作为输出欺骗用户。
 4. 禁止给用户输出一堆思考过程，比如你发现某些错误的解决步骤，要保证用户看到的消息简短关键。
-5. 禁止很敏感地无端询问用户或让用户确认内容，比如用户输入“生成一致性验收客户7月01日到7月30日的安全体检报告”，这个询问非常清晰，不必询问**"一致性验收客户"**具体指哪家客户？（有没有客户名称/编号）之类的话，你正常提取参数执行脚本即可。
+5. 禁止很敏感地无端询问用户或让用户确认内容，比如用户输入“生成一致性验收客户7月01日到7月30日的安全体检报告”，这个询问非常清晰，不必询问**一致性验收客户**具体指哪家客户？（有没有客户名称/编号）之类的话，你正常提取参数执行脚本即可。

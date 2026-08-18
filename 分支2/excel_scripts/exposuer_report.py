@@ -17,7 +17,7 @@ from openpyxl import load_workbook
 
 # ==================== 配置（按需修改） ====================
 COOKIES_FILE    = r"C:\Users\User\Downloads\cookies.txt"
-SOAR_BASE_URL   = "https://soar59.sangfor.com.cn"
+SOAR_BASE_URL   = "https://soar.sangfor.com.cn"
 TEMP_DIR        = r"C:\Users\User\Downloads\temp_report"
 OUTPUT_FILE     = r"C:\Users\User\Downloads\temp_report\暴露面清单.xlsx"
 POLL_INTERVAL  = 5     # 轮询间隔（秒）

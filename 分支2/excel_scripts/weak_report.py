@@ -38,11 +38,11 @@ RETRY_DELAY     = 3     # 重试等待时间（秒）
 PAGE_LIMIT      = 100   # 列表接口每次查询数量
 
 # --- EASM 平台（外网） ---
-SOAR_BASE_URL    = "https://soar59.sangfor.com.cn"
+SOAR_BASE_URL    = "https://soar.sangfor.com.cn"
 EASM_COOKIES_FILE = r"C:\Users\User\Downloads\cookies.txt"
 
 # --- MSSW 平台（内网） ---
-MSSW_BASE_URL      = "https://pre.soar.sangfor.com"
+MSSW_BASE_URL      = "https://mssw.sangfor.com.cn"
 MSSW_COOKIES_FILE   = r"C:\Users\User\Downloads\mssw_cookies.txt"
 
 

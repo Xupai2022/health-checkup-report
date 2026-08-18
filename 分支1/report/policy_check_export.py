@@ -23,7 +23,7 @@ import openpyxl
 # 常量
 # ──────────────────────────────────────────────
 
-DEFAULT_BASE_URL = "https://sitmssw.soar.sangfor.com.cn"
+DEFAULT_BASE_URL = "https://mssw.sangfor.com.cn"
 API_PATH = "/gateway/idps/order/v1/tools/task/xdr_policy_check/result"
 PAGE_SIZE = 100
 DEFAULT_OUTPUT_PATH = "策略检查清单.xlsx"
@@ -436,7 +436,7 @@ def parse_args():
     parser.add_argument("--cookie-path", required=True, help="Cookie 文件路径（必填），支持纯文本或含 cookieString 的 JSON")
     parser.add_argument("--output", default=None, help="输出 Excel 路径，默认为当前目录下 策略检查.xlsx")
     parser.add_argument("--json-output", default=None, help="输出 JSON 路径，默认为 tmp/policy_check.json")
-    parser.add_argument("--mssw-base-url", default=None, help="MSSW 站点域名（如 sitmssw.soar.sangfor.com.cn），未传时使用默认值")
+    parser.add_argument("--mssw-base-url", default=None, help="MSSW 站点域名（如 mssw.sangfor.com.cn），未传时使用默认值")
     return parser.parse_args()
 
 
