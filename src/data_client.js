@@ -153,8 +153,6 @@ function applyAssetStatusStats(reportData, stats) {
   const merged = deepMerge(reportData, {
     assetLedger: {
       core_asset: Number(stats.core_asset || 0),
-      core_managed_asset: Number(stats.core_managed_asset || 0),
-      manage_asset: Number(stats.manage_asset || 0),
       currentAssetCount: Number(stats.currentAssetCount || 0),
       waitApproveAssetCount: Number(stats.waitApproveAssetCount || 0),
       typeDistribution: Array.isArray(stats.typeDistribution) ? stats.typeDistribution : [],
@@ -183,7 +181,7 @@ function applyAssetStatusStats(reportData, stats) {
   });
 
   if (merged && merged.assetLedger) {
-    merged.assetLedger.assetTotal = Number(stats.assetTotal || stats.manage_asset || 0);
+    merged.assetLedger.assetTotal = Number(stats.assetTotal || 0);
   }
 
   return merged;

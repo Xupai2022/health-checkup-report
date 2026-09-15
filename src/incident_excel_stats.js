@@ -219,10 +219,9 @@ async function extractVulnExploitExamples(incidentExcelPath, incidentIds) {
   return JSON.parse(stdout);
 }
 
-async function summarizeManagedAssetIncidents(assetExcelPath, incidentExcelPath) {
+async function summarizeIncidentResponseStats(assetExcelPath, incidentExcelPath) {
   if (!assetExcelPath || !incidentExcelPath) {
     return {
-      managedAssetCount: 0,
       AvgResponseTime: 0,
       topEventType: '',
       top3BusinessSystems: '',
@@ -230,12 +229,11 @@ async function summarizeManagedAssetIncidents(assetExcelPath, incidentExcelPath)
     };
   }
 
-  const scriptPath = path.join(__dirname, '..', 'scripts', 'managed_asset_incident_stats.py');
-  const stdout = await execPythonWithArgs(scriptPath, [encodePath(assetExcelPath), encodePath(incidentExcelPath)], '托管资产事件统计失败');
+  const scriptPath = path.join(__dirname, '..', 'scripts', 'incident_response_stats.py');
+  const stdout = await execPythonWithArgs(scriptPath, [encodePath(assetExcelPath), encodePath(incidentExcelPath)], '全量事件响应统计失败');
   const parsed = JSON.parse(stdout);
 
   return {
-    managedAssetCount: Number(parsed.managedAssetCount || 0),
     AvgResponseTime: Number(parsed.AvgResponseTime || 0),
     topEventType: String(parsed.topEventType || ''),
     top3BusinessSystems: String(parsed.top3BusinessSystems || ''),
@@ -331,7 +329,7 @@ module.exports = {
   extractC2ConnectionExamples,
   extractVirusTrojanExamples,
   extractVulnExploitExamples,
-  summarizeManagedAssetIncidents,
+  summarizeIncidentResponseStats,
   extractExploitStats,
   extractIncidentTypeStats,
   extractCaseStudyCandidates

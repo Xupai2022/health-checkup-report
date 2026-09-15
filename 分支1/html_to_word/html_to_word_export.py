@@ -547,6 +547,9 @@ class HtmlToWordExporter:
             grid_snap_id,
         )
         snapshot_map[grid_snap_id] = str(img_path)
+        if not hasattr(self, "_snapshot_component_ids"):
+            self._snapshot_component_ids = {}
+        self._snapshot_component_ids[grid_snap_id] = "webTop5"
         # 记录 grid-2 合成图的图注文字（图下居中显示）
         if not hasattr(self, "_snapshot_grid_captions"):
             self._snapshot_grid_captions = {}
@@ -617,6 +620,23 @@ class HtmlToWordExporter:
                             }""",
                             snap_id,
                         )
+                        if not hasattr(self, "_snapshot_component_ids"):
+                            self._snapshot_component_ids = {}
+                        slot_component_ids = {
+                            'slot-risk-overview': 'riskOverviewFrame',
+                            'slot-top5-risk': 'top5Risk',
+                            'slot-asset-stats': 'assetSummaryCards',
+                            'slot-attack-trend': 'attackTrend',
+                            'slot-event-charts': 'eventTypeDistribution',
+                            'slot-attack-chain': 'attackChain',
+                            'slot-internet-exposure': 'exposureOverview',
+                            'slot-internet-weak': 'internetWeakCards',
+                            'slot-intranet-weak': 'intranetWeakCards',
+                            'slot-component-check-rings': 'policyCheckCards',
+                            'slot-threat-ops': 'operationsFrame',
+                        }
+                        if slot_id in slot_component_ids:
+                            self._snapshot_component_ids[snap_id] = slot_component_ids[slot_id]
                         # 例外 1：整体截图
                         if slot_id == 'slot-event-charts':
                             is_event_charts_slot = True
@@ -2765,6 +2785,22 @@ class HtmlToWordExporter:
             width_mm = mm_w * scale
         return Mm(width_mm), Mm(height_mm)
 
+    def _set_snapshot_metadata(self, paragraph, component_id, title):
+        """Store a stable component identifier on a Word drawing."""
+        if paragraph is None:
+            return
+        drawing = paragraph._p.find(qn("w:r"))
+        drawing = drawing.find(qn("w:drawing")) if drawing is not None else None
+        if drawing is None:
+            return
+        ns = "{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}"
+        doc_pr = drawing.find(f"{ns}inline/{ns}docPr")
+        if doc_pr is None:
+            doc_pr = drawing.find(f"{ns}anchor/{ns}docPr")
+        if doc_pr is not None:
+            doc_pr.set("descr", f"sr-component:{component_id}")
+            doc_pr.set("title", str(title or component_id))
+
     def _map_image(self, node, container):
         """处理 base64 data:image 与截图占位。
 
@@ -2820,6 +2856,9 @@ class HtmlToWordExporter:
                 pic_p = container.add_picture(img_path, width=Mm(content_w))
             else:
                 pic_p = container.add_picture(img_path, width=w, height=h)
+            component_id = chart_id or (getattr(self, "_snapshot_component_ids", {}) or {}).get(snap)
+            if component_id:
+                self._set_snapshot_metadata(pic_p, component_id, chart_title or component_id)
             # 图片段段后间距强制为 0，让下方图注紧贴图片
             if pic_p is not None:
                 pic_p.paragraph_format.space_before = Pt(0)

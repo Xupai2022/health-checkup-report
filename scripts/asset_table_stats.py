@@ -131,7 +131,7 @@ def main():
     candidate_rows = list(sheet.iter_rows(min_row=1, max_row=2, values_only=True))
     header_row = ()
     header_row_idx = 1
-    known_aliases = ("ip地址", "资产类型", "审核状态", "agent状态", "托管状态", "数据源")
+    known_aliases = ("ip地址", "资产类型", "审核状态", "agent状态", "数据源")
     for idx, row in enumerate(candidate_rows, start=1):
         normalized = [normalize_header(c) for c in row if c is not None]
         if any(any(alias in h for h in normalized) for alias in known_aliases):
@@ -149,14 +149,11 @@ def main():
     protection_column = find_column(headers, ("agent状态",))
     exposure_column = find_column(headers, ("互联网暴露",))
     importance_column = find_column(headers, ("重要级别",))
-    managed_column = find_column(headers, ("托管状态",))
     datasource_column = find_column(headers, ("数据源",))
     approval_column = find_column(headers, ("审核状态",))
 
     asset_total = 0
-    manage_asset = 0
     core_asset = 0
-    core_managed_asset = 0
     type_counts = {"server": 0, "terminal": 0}
     protection_counts = {}  # 直接记录中文值
     protection_protected = 0
@@ -233,18 +230,6 @@ def main():
                 is_core = True
                 core_asset += 1
 
-        # ---- 核心已托管：核心资产中"托管状态"为"已托管" ----
-        if is_core and managed_column is not None and managed_column < len(row):
-            raw = normalize(row[managed_column])
-            if "已托管" in raw:
-                core_managed_asset += 1
-
-        # ---- 已托管资产：托管状态为"已托管" ----
-        if managed_column is not None and managed_column < len(row):
-            raw = normalize(row[managed_column])
-            if "已托管" in raw:
-                manage_asset += 1
-
         # ---- 待审核资产：审核状态为"待审核" ----
         if approval_column is not None and approval_column < len(row):
             raw = normalize(row[approval_column])
@@ -268,9 +253,7 @@ def main():
     print(json.dumps({
         "assetTotal": asset_total,
         "currentAssetCount": current_asset_count,
-        "manage_asset": manage_asset,
         "core_asset": core_asset,
-        "core_managed_asset": core_managed_asset,
         "waitApproveAssetCount": wait_approve_count,
         "typeDistribution": {
             "server": type_counts["server"],

@@ -40,6 +40,10 @@ DEV_TYPE_DICT = {
     100038: "SaaS-EDR-探针版",
 }
 
+# EDR 组件的 devType 集合（与 src/mssw_client.js 的 DEVICE_TYPE_CATEGORIES.aes 保持一致）
+# 包含 EDR、CWPP、SaaS-EDR-探针版、EDR-探针版、SAAS EDR、SaaS NGES
+EDR_DEVICE_TYPES = {12, 37, 100038, 50038, 100012, 69}
+
 # 4 个核心组件（单独显示）
 CORE_COMPONENTS = {"AF", "EDR", "SIP", "STA"}
 
@@ -69,6 +73,10 @@ def main():
     for item in items:
         total += 1
         dev_type = item.get("devType")
+        if dev_type in EDR_DEVICE_TYPES:
+            # 命中 EDR devType 集合的（含 CWPP/SaaS NGES 等别名）统一计入 EDR
+            component_counter["EDR"] += 1
+            continue
         name = DEV_TYPE_DICT.get(dev_type)
         if name:
             component_counter[name] += 1

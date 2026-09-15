@@ -21,7 +21,7 @@ async function timedPhase(name, fn) {
 const { parseArgs, requireArgs } = require('./src/args');
 const { collectReportData, recalcThreatPreventionRiskCount } = require('./src/data_client');
 const { summarizeAssetTable, summarizeDeviceComponents } = require('./src/asset_excel_stats');
-const { summarizeIncidentStatus, extractExploitStats, extractVulnExploitExamples, summarizeManagedAssetIncidents, extractIncidentTypeStats, summarizeTopRiskAssetDetails, extractIncidentDirectStats, annotateIncidentGptConclusion } = require('./src/incident_excel_stats');
+const { summarizeIncidentStatus, extractExploitStats, extractVulnExploitExamples, summarizeIncidentResponseStats, extractIncidentTypeStats, summarizeTopRiskAssetDetails, extractIncidentDirectStats, annotateIncidentGptConclusion } = require('./src/incident_excel_stats');
 const { exportMsswIncidentList, exportMsswAssetList, exportMsswDeviceList, findMsswCustomerIdByName, fetchDefaultProjectTimeRange, readXdrCookieInfo, readMsswCookieInfo, collectMsswDeviceCategoryCounts, parseLocalDate, removeIncidentSensitiveColumns, processRiskListTable, fetchContainedAlertCount } = require('./src/mssw_client');
 const { collectPreventionTableExports, getTmpExportDir } = require('./src/prevention_exports');
 const { calculatePreventionData } = require('./src/prevention_data');
@@ -164,20 +164,20 @@ async function main() {
     }
   }
 
-  // 从资产表和事件表提取托管资产安全事件统计（不阻断主流程）
+  // 从资产表和事件表提取全量事件响应统计（不阻断主流程）
   const resolvedAssetFilePath = await resolveAssetFilePath({
     options,
     tableExports,
     logger
   });
   const assetFilePath = resolvedAssetFilePath;
-  let managedAssetIncidentStats = null;
+  let incidentResponseStats = null;
   if (assetFilePath && incidentFilePath) {
     try {
-      managedAssetIncidentStats = await summarizeManagedAssetIncidents(assetFilePath, incidentFilePath);
-      logger(`全量事件响应时间统计: AvgResponseTime=${managedAssetIncidentStats.AvgResponseTime}分钟, 托管资产数=${managedAssetIncidentStats.managedAssetCount}`);
+      incidentResponseStats = await summarizeIncidentResponseStats(assetFilePath, incidentFilePath);
+      logger(`全量事件响应时间统计: AvgResponseTime=${incidentResponseStats.AvgResponseTime}分钟`);
     } catch (error) {
-      logger(`托管资产事件统计失败（不影响主流程）: ${error.message}`);
+      logger(`全量事件响应统计失败（不影响主流程）: ${error.message}`);
     }
   }
 
@@ -233,20 +233,18 @@ async function main() {
     topEventType: '',
     top3BusinessSystems: '',
     businessSystemEventDistribution: [],
-    managedAssetCount: 0,
   });
-  if (managedAssetIncidentStats) {
+  if (incidentResponseStats) {
     Object.assign(reportData.riskDetails, {
-      AvgResponseTime: managedAssetIncidentStats.AvgResponseTime,
-      managedAssetCount: managedAssetIncidentStats.managedAssetCount,
-      topEventType: managedAssetIncidentStats.topEventType,
-      top3BusinessSystems: managedAssetIncidentStats.top3BusinessSystems,
-      businessSystemEventDistribution: managedAssetIncidentStats.businessSystemEventDistribution
+      AvgResponseTime: incidentResponseStats.AvgResponseTime,
+      topEventType: incidentResponseStats.topEventType,
+      top3BusinessSystems: incidentResponseStats.top3BusinessSystems,
+      businessSystemEventDistribution: incidentResponseStats.businessSystemEventDistribution
     });
-    logger(`全量事件响应时间已合并: AvgResponseTime=${managedAssetIncidentStats.AvgResponseTime}分钟`);
-    logger(`最多类型事件: ${managedAssetIncidentStats.topEventType}`);
-    logger(`TOP3业务系统: ${managedAssetIncidentStats.top3BusinessSystems}`);
-    logger(`业务系统安全事件分布: ${JSON.stringify(managedAssetIncidentStats.businessSystemEventDistribution)}`);
+    logger(`全量事件响应时间已合并: AvgResponseTime=${incidentResponseStats.AvgResponseTime}分钟`);
+    logger(`最多类型事件: ${incidentResponseStats.topEventType}`);
+    logger(`TOP3业务系统: ${incidentResponseStats.top3BusinessSystems}`);
+    logger(`业务系统安全事件分布: ${JSON.stringify(incidentResponseStats.businessSystemEventDistribution)}`);
   }
 
   // 从事件表独立计算安全事件类型分布（不依赖资产表）
@@ -624,6 +622,31 @@ async function main() {
     await timedPhase('美化归档风险清单 Excel', () => beautifyArchivedRiskLists(reportDir, logger));
   } else {
     logger('已跳过归档风险清单 Excel 美化 (--beautify-excel false)');
+  }
+
+  // ZIP 打包前补充交付物：本次生成的 HTML 副本与离线 Word 图表编辑器（见 Word图表可编辑实现计划.md §5）
+  const deliverHtmlPath = result.html_path || result.filePath || '';
+  if (deliverHtmlPath) {
+    // 先清理上次运行残留的 HTML 副本，避免旧版本混入 ZIP
+    const staleHtml = (await fs.readdir(reportDir))
+      .filter((name) => name.toLowerCase().endsWith('.html'));
+    if (staleHtml.length) {
+      await Promise.all(staleHtml.map((name) => fs.unlink(path.join(reportDir, name))));
+      logger(`已清理旧的 HTML 副本: ${staleHtml.length} 个`);
+    }
+    const htmlCopyPath = path.join(reportDir, path.basename(deliverHtmlPath));
+    await fs.copyFile(deliverHtmlPath, htmlCopyPath);
+    logger(`HTML 副本已放入报告目录: ${htmlCopyPath}`);
+  }
+
+  const chartEditorSrc = path.join(root, 'Word图表编辑器');
+  const chartEditorDest = path.join(reportDir, '图表编辑器');
+  try {
+    await fs.rm(chartEditorDest, { recursive: true, force: true });
+    await fs.cp(chartEditorSrc, chartEditorDest, { recursive: true });
+    logger(`Word 图表编辑器已放入报告目录: ${chartEditorDest}`);
+  } catch (error) {
+    logger(`复制 Word 图表编辑器失败（不影响主流程）: ${error.message}`);
   }
 
   // 将安全体检报告文件夹打包为 zip

@@ -19,9 +19,7 @@ async function summarizeAssetTable(excelPath, options = {}) {
   const result = {
     assetTotal,
     currentAssetCount: Number(parsed.currentAssetCount || 0),
-    manage_asset: Number(parsed.manage_asset || 0),
     core_asset: Number(parsed.core_asset || 0),
-    core_managed_asset: Number(parsed.core_managed_asset || 0),
     waitApproveAssetCount: Number(parsed.waitApproveAssetCount || 0),
     ready_to_outbound: Number(parsed.ready_to_outbound || 0),
     typeDistribution: toNameValueList(parsed.typeDistribution, [

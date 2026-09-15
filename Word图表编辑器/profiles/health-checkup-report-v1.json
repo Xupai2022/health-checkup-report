@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "templateVersion": "health-checkup-report-v1",
+  "note": "Existing DOCX exports did not persist component-to-media paths. This profile maps only components that can be proved from the current export: image8 is the left donut in 3.2.3, image9 is the exposure overview, and image12 is the internet weak-password asset chart. Combined cards remain manual to prevent replacing an unrelated image.",
+  "supportedCharts": ["eventTypeDistribution", "businessSystemEventDistribution", "internet.exposure.web_top5", "internet.exposure.nonweb_top5", "internet.weak_pwd.asset_rows", "intranet.weak_pwd.biz_rows", "intranet.weak_pwd.asset_rows"]
+}

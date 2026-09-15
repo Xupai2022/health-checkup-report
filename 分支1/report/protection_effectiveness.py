@@ -5,7 +5,7 @@
 
 统计内容：
 1. 资产统计：重要级别为"核心"且数据源中不含 aES 类型设备（CWPP、SaaS-EDR-探针版、
-   EDR-探针版、EDR、SAAS EDR）的资产 IP 列表及其总数。
+   EDR-探针版、EDR、SAAS EDR、SaaS NGES）的资产 IP 列表及其总数。
    数据源类型解析参考 report.scoring._parse_dev_types_from_datasource。
 2. 策略检查统计：策略检查总数、异常项数量、按设备类型聚合的异常项数量、
    按设备聚合的列表（设备名称、设备类型、检查数量、异常数量）。
@@ -59,7 +59,7 @@ CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.y
 
 
 # ── aES 对应的设备类型集合（小写） ──
-# 包括 CWPP、SaaS-EDR-探针版、EDR-探针版、EDR、SAAS EDR
+# 包括 CWPP、SaaS-EDR-探针版、EDR-探针版、EDR、SAAS EDR、SaaS NGES
 AES_DEVICE_TYPES = {
     "cwpp",
     "saas-edr-探针版",
@@ -67,6 +67,9 @@ AES_DEVICE_TYPES = {
     "edr",
     "saas edr",
     "saas-edr",
+    "nges",
+    "saas nges",
+    "saas-nges",
 }
 
 

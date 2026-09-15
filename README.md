@@ -64,7 +64,6 @@ node health_report.js `
 | `projectBackground.startDate` | 报告开始日期 | `--start` / MSSW 项目列表接口 | 用户传时间时直接取命令行参数；未传时取最早 `service_start` |
 | `projectBackground.endDate` | 报告结束日期 | `--end` / MSSW 项目列表接口 + 运行时 | 用户传时间时直接取命令行参数；未传时取 `min(报告生成时刻, 最早非空 service_end)` |
 | `assetLedger.core_asset` | 核心资产数 | 导出的资产表 Excel | 读取第二行表头里的 `重要级别` 列；列值非空且包含 `核心` 时计为核心资产 |
-| `assetLedger.manage_asset` | 台账资产数 | 导出的资产表 Excel | 统计第三行开始的有效行数 |
 | `assetLedger.ready_to_outbound` | 7天内即将退库资产数 | MSSW 资产台账 count 接口 | 取 `{"ready_to_outbound":{"op":"=","val":"last7d"}}` 的 `total` |
 | `assetLedger.typeDistribution` | 资产类型分布 | 导出的资产表 Excel | 读取第二行表头里的 `资产类型(一级)` 列；值包含 `服务器` 计入服务器，包含 `终端` 计入终端，其余计入其他 |
 | `assetLedger.protectionDistribution` | 资产防护统计 | 导出的资产表 Excel | 读取第二行表头里的 `agent状态` 列；值恰好等于 `在线 / 离线 / 已禁用 / 已降级` 时分别计数，值等于 `已卸载 / 已移除 / 未接入 / 未授权` 时统一归并到 `未防护`，并按 `在线 / 离线 / 已禁用 / 已降级 / 未防护` 这 5 个固定枚举输出 |
@@ -112,7 +111,7 @@ node health_report.js `
 | `riskDetails.sangfor` | 深信服设备数 | 深信服设备列表接口 | 取 `/api/apex/device/v1/devices/list` 返回的 `data.total` |
 | `riskDetails.third` | 第三方设备数 | 第三方设备列表接口 | 取 `/api/apex/thirdparty/v1/app/instance/list` 返回的 `data.count` |
 | `riskDetails.af` | AF 设备数 | 深信服设备列表接口 | 遍历设备列表中 `devType` 等于 `3` 的记录计数 |
-| `riskDetails.aes` | aES 设备数 | 深信服设备列表接口 | 遍历设备列表中 `devType` 属于 `12 / 37 / 100038 / 50038 / 100012` 的记录计数 |
+| `riskDetails.aes` | aES 设备数 | 深信服设备列表接口 | 遍历设备列表中 `devType` 属于 `12 / 37 / 100038 / 50038 / 100012 / 69` 的记录计数 |
 | `riskDetails.sip` | SIP 设备数 | 深信服设备列表接口 | 遍历设备列表中 `devType` 等于 `9` 的记录计数 |
 | `riskDetails.sta` | STA 设备数 | 深信服设备列表接口 | 遍历设备列表中 `devType` 等于 `25` 的记录计数 |
 | `riskDetails.other_sf` | 其它深信服设备数 | 深信服设备列表接口 | 遍历设备列表中未命中上述映射的记录计数 |
@@ -129,13 +128,13 @@ node health_report.js `
 ```html
 {{ projectBackground.customerName }}
 {{ projectBackground.startDate }}
-{{ assetLedger.manage_asset }}
+{{ assetLedger.assetTotal }}
 ```
 
 对于已有模板中的 KPI，可继续使用：
 
 ```html
-<div data-field="assetLedger.manage_asset">520</div>
+<div data-field="assetLedger.assetTotal">520</div>
 ```
 
 渲染器会按数据路径回填 `data-field` 的文本内容，并把完整 `window.SECURITY_REPORT_DATA` 注入页面，方便后续图表脚本读取结构化数据。

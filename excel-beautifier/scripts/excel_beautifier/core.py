@@ -168,8 +168,10 @@ def process(
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
 
-        # Skip empty sheets
-        if ws.max_row is None or ws.max_row < 2:
+        # Skip sheets with no rows at all. Header-only sheets (max_row == 1)
+        # still get styled — detect_structure returns None for truly empty
+        # sheets, which is handled below.
+        if ws.max_row is None or ws.max_row == 0:
             continue
 
         # Detect structure; None means no reliable header (cover/notes page) — skip

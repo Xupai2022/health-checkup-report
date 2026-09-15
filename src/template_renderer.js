@@ -76,7 +76,7 @@ async function renderReportToFile({ templatePath, outputDir, reportData }) {
 
 function extractGradeAssets(template) {
   const assets = {};
-  const re = /'([优劣中差])':\s*'(data:image\/png;base64,[^']+)'/g;
+  const re = /'([优良中差])':\s*'(data:image\/png;base64,[^']+)'/g;
   let m;
   while ((m = re.exec(template)) !== null) {
     assets[m[1]] = m[2];
@@ -377,7 +377,7 @@ function renderRepeats(html, data) {
 function renderAssetLedgerSummary(data) {
   const assetLedger = data.assetLedger || {};
   return [
-    paragraph(`【资产统计】台账资产${displayValue(assetLedger.assetTotal)}个，核心资产${displayValue(assetLedger.core_asset)}个（已托管${displayValue(assetLedger.core_managed_asset)}个），7天内即将退库${displayValue(assetLedger.ready_to_outbound)}个，安全组件接入${displayValue(assetLedger.totalComponentCount)}个`),
+    paragraph(`【资产统计】台账资产${displayValue(assetLedger.assetTotal)}个，核心资产${displayValue(assetLedger.core_asset)}个，7天内即将退库${displayValue(assetLedger.ready_to_outbound)}个，安全组件接入${displayValue(assetLedger.totalComponentCount)}个`),
     paragraph(`【资产类型分布】${formatNameValueList(assetLedger.typeDistribution)}`),
     paragraph(`【资产防护统计】${formatNameValueList(assetLedger.protectionDistribution)}`),
     paragraph(`【安全组件分布】${formatNameValueList(assetLedger.componentDistribution)}`)
