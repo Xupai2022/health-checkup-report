@@ -65,6 +65,59 @@ async function removeIncidentRows(excelPath, incidentIds) {
   };
 }
 
+// 与 removeIncidentRows 相同调用，但额外回传 Python 诊断输出（stderr）,
+// 用于误报过滤的证据链定位。不影响主流程。
+function execPythonWithDiagnostics(scriptPath, args, label) {
+  return new Promise((resolve, reject) => {
+    execFile('python', [scriptPath, ...args], {
+      encoding: 'utf8',
+      windowsHide: true,
+      maxBuffer: 1024 * 1024,
+      env: Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8' })
+    }, (error, stdout, stderr) => {
+      if (error) {
+        reject(new Error(`${label}: ${stderr || error.message}`));
+        return;
+      }
+      resolve({ stdout: (stdout || '').trim(), stderr: (stderr || '').trim() });
+    });
+  });
+}
+
+// 按事件表自带的「状态说明」列删除误报行，不依赖外部接口拉取的 ID 清单。
+// statusValues 未传时，Python 侧使用默认值：业务触发 / 技术误报 / 接受风险。
+async function removeIncidentRowsByStatus(excelPath, statusValues) {
+  if (!excelPath) {
+    return { removed: 0, totalBefore: 0, totalAfter: 0, message: '事件表路径为空', diagnostics: [] };
+  }
+
+  const scriptPath = path.join(__dirname, '..', 'scripts', 'remove_incident_rows.py');
+  const payload = { status_values: Array.isArray(statusValues) && statusValues.length
+    ? statusValues
+    : ['业务触发', '技术误报', '接受风险'] };
+  const { stdout, stderr } = await execPythonWithDiagnostics(scriptPath, [encodePath(excelPath), JSON.stringify(payload)], '按状态说明移除误报事件失败');
+  const parsed = JSON.parse(stdout);
+  const diagnostics = stderr
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      try {
+        return JSON.parse(line);
+      } catch (e) {
+        return { raw: line };
+      }
+    });
+
+  return {
+    removed: Number(parsed.removed || 0),
+    totalBefore: Number(parsed.total_before || 0),
+    totalAfter: Number(parsed.total_after || 0),
+    message: parsed.message || '',
+    diagnostics
+  };
+}
+
 async function parseIncidentGptStats(excelPath) {
   if (!excelPath) {
     return null;
@@ -321,6 +374,7 @@ async function extractCaseStudyCandidates(incidentExcelPath, options = {}) {
 module.exports = {
   summarizeIncidentStatus,
   removeIncidentRows,
+  removeIncidentRowsByStatus,
   parseIncidentGptStats,
   extractIncidentDirectStats,
   annotateIncidentGptConclusion,

@@ -911,6 +911,139 @@
     preview.srcdoc = iframePreviewHtml(html);
     $('preview').replaceChildren(preview);
   }
+  // html2canvas 1.4.1 有两个洞，叠在一起把看板里那几处渐变标题画成了矩形
+  // （.ro5-stage-title / .ops3-grad-title："攻击概览"、"AI辅助告警生成"、"安全GPT研判+专家运营" 等）：
+  //   1. 它的 background-clip 解析器只认 padding-box / content-box，`text` 落进 default 分支
+  //      被当成 border-box——于是 background 里那条 141deg 渐变被铺满整个盒子，就是那块矩形；
+  //   2. 它完全不认 -webkit-text-fill-color，`transparent` 失效，文字改用继承色压在渐变上。
+  // 浏览器是把渐变裁进字形里画的，html2canvas 做不到，所以退一步做等价近似：
+  // 把标题的每个字拆成单独的 <span>，沿渐变在这次截图里的实际几何方向（141deg 在盒子上的投影）
+  // 逐字取一个纯色。字体、字号、字距、换行都没动，只是用 N 个采样点逼近一条渐变。
+  // 实测（tmp/editor-regression/gradient_clip_probe.py，对照 Chrome 原生渲染）：不处理时
+  // 平均色差 105~135、96% 以上像素不同；处理后降到 1.2~7，且三个标题都优于纯色兜底。
+  // 返回的函数只改 onclone 给的克隆文档，渲染帧本身一个字节都没动。
+  function gradientTitleFixup(doc) {
+    const win = doc.defaultView;
+    const targets = [];
+    for (const el of doc.querySelectorAll('*')) {
+      try {
+        const style = win.getComputedStyle(el);
+        if ((style.webkitBackgroundClip || style.backgroundClip) !== 'text') continue;
+        const gradient = parseCssLinearGradient(style.backgroundImage);
+        if (!gradient) continue;
+        const box = el.getBoundingClientRect();
+        if (!box.width || !box.height) continue;
+        let colors = null;
+        const node = el.firstChild;
+        // 只处理"整块就是一段文本"的标题。有子元素的（比如套了 <span> 的）不做逐字，
+        // 走下面的纯色兜底——至少不会画出矩形。
+        if (node && node.nodeType === 3 && el.childNodes.length === 1 && node.length) {
+          const range = doc.createRange();
+          let last = 0.5;
+          colors = [];
+          for (let i = 0; i < node.length; i++) {
+            range.setStart(node, i);
+            range.setEnd(node, i + 1);
+            const rect = range.getBoundingClientRect();
+            // 空白字符可能量出空 rect，沿用上一个字的采样位置，别把它丢掉。
+            if (rect.width || rect.height) {
+              last = gradientProgressAt(gradient, box,
+                rect.left - box.left + rect.width / 2, rect.top - box.top + rect.height / 2);
+            }
+            colors.push(sampleGradient(gradient, last));
+          }
+        }
+        el.setAttribute('data-sr-grad', String(targets.length));
+        targets.push({ colors, solid: sampleGradient(gradient, 0.5) });
+      } catch (error) { /* 认不出来就不动这个元素，交给下面的兜底分支 */ }
+    }
+    return (clonedDoc) => {
+      targets.forEach((target, index) => {
+        const el = clonedDoc.querySelector(`[data-sr-grad="${index}"]`);
+        if (!el) return;
+        el.removeAttribute('data-sr-grad');
+        el.style.background = 'none';
+        el.style.color = rgbCss(target.colors ? target.colors[0] : target.solid);
+        if (!target.colors) return;
+        el.innerHTML = [...el.textContent].map((char, i) =>
+          `<span style="color:${rgbCss(target.colors[Math.min(i, target.colors.length - 1)])}">${escapeXml(char)}</span>`).join('');
+      });
+    };
+  }
+  // 逗号要按括号深度切：渐变里 rgb(1, 2, 3) 自带逗号。
+  function splitTopLevel(value) {
+    const parts = [];
+    let depth = 0, current = '';
+    for (const char of value) {
+      if (char === '(') depth += 1;
+      else if (char === ')') depth -= 1;
+      if (char === ',' && depth === 0) { parts.push(current); current = ''; } else current += char;
+    }
+    parts.push(current);
+    return parts;
+  }
+  const GRADIENT_SIDES = { top: 0, right: 90, bottom: 180, left: 270 };
+  function parseCssLinearGradient(image) {
+    const match = /linear-gradient\(([\s\S]*)\)$/.exec(String(image).trim());
+    if (!match) return null;
+    const parts = splitTopLevel(match[1]).map((part) => part.trim());
+    let angle = 180, index = 0;
+    if (/^-?[\d.]+deg$/.test(parts[0])) { angle = parseFloat(parts[0]); index = 1; }
+    else if (parts[0] in GRADIENT_SIDES) { angle = GRADIENT_SIDES[parts[0]]; index = 1; }
+    else if (/^to\s/.test(parts[0])) return null;   // 角关键字（to top right 之类）这版模板里没有，不猜
+    const stops = [];
+    for (; index < parts.length; index += 1) {
+      const color = parseCssColor(parts[index]);
+      if (!color) return null;
+      const percent = /(-?[\d.]+)%/.exec(parts[index].replace(/rgba?\([^)]*\)/, ''));
+      stops.push({ color, pos: percent ? parseFloat(percent[1]) / 100 : null });
+    }
+    if (stops.length < 2) return null;
+    if (stops[0].pos === null) stops[0].pos = 0;
+    if (stops[stops.length - 1].pos === null) stops[stops.length - 1].pos = 1;
+    // 没写 offset 的色标夹在相邻两个已知色标之间等距铺开。
+    const known = stops.map((stop, i) => (stop.pos === null ? -1 : i)).filter((i) => i >= 0);
+    for (let k = 0; k < known.length - 1; k += 1) {
+      const from = known[k], to = known[k + 1];
+      for (let j = from + 1; j < to; j += 1) {
+        stops[j].pos = stops[from].pos + (stops[to].pos - stops[from].pos) * (j - from) / (to - from);
+      }
+    }
+    return { angle, stops };
+  }
+  function parseCssColor(text) {
+    const rgb = /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/.exec(text);
+    if (rgb) return [+rgb[1], +rgb[2], +rgb[3]];
+    const hex = /#([0-9a-f]{6}|[0-9a-f]{3})\b/i.exec(text);
+    if (!hex) return null;
+    let digits = hex[1];
+    if (digits.length === 3) digits = [...digits].map((c) => c + c).join('');
+    return [0, 2, 4].map((i) => parseInt(digits.slice(i, i + 2), 16));
+  }
+  function sampleGradient(gradient, progress) {
+    const stops = gradient.stops;
+    if (progress <= stops[0].pos) return stops[0].color.slice();
+    const last = stops[stops.length - 1];
+    if (progress >= last.pos) return last.color.slice();
+    for (let i = 0; i < stops.length - 1; i += 1) {
+      const from = stops[i], to = stops[i + 1];
+      if (progress < from.pos || progress > to.pos) continue;
+      const span = to.pos - from.pos;
+      const k = span <= 0 ? 0 : (progress - from.pos) / span;
+      return from.color.map((channel, c) => Math.round(channel + (to.color[c] - channel) * k));
+    }
+    return last.color.slice();
+  }
+  // CSS 的 0deg 指向上方、顺时针为正；渐变线长度是盒子在方向向量上的投影长。
+  // 把点投影到这条线上得到 0~1 的进度，跟浏览器画出来的位置一致。
+  function gradientProgressAt(gradient, box, x, y) {
+    const radians = gradient.angle * Math.PI / 180;
+    const dx = Math.sin(radians), dy = -Math.cos(radians);
+    const length = Math.abs(box.width * dx) + Math.abs(box.height * dy);
+    if (length <= 0) return 0.5;
+    return 0.5 + ((x - box.width / 2) * dx + (y - box.height / 2) * dy) / length;
+  }
+  function rgbCss(color) { return `rgb(${color[0]},${color[1]},${color[2]})`; }
   async function rasterizeIframeComponent(doc, component, target) {
     const root = doc.getElementById('fit-root') || doc.body;
     if (!root?.children.length) throw new Error(`嵌入式看板没有渲染出内容：${component.iframe}`);
@@ -929,10 +1062,12 @@
     const width = Math.ceil(stage.scrollWidth || stage.offsetWidth);
     const height = Math.ceil(stage.scrollHeight || stage.offsetHeight);
     if (!width || !height) throw new Error('嵌入式看板尺寸无效。');
+    const fixGradientTitles = gradientTitleFixup(doc);
     try {
       const source = await window.html2canvas(stage, {
         backgroundColor: '#ffffff', useCORS: false, allowTaint: false, logging: false,
-        scale: 1, width, height, windowWidth: width, windowHeight: height
+        scale: 1, width, height, windowWidth: width, windowHeight: height,
+        onclone: fixGradientTitles
       });
       const canvas = document.createElement('canvas');
       canvas.width = target.width;
@@ -943,6 +1078,8 @@
       stage.style.transform = previousTransform;
       root.style.width = previousRootWidth;
       root.style.height = previousRootHeight;
+      // 定位标记只服务于这一次 onclone，留在渲染帧上会污染后续的整份重载比对。
+      doc.querySelectorAll('[data-sr-grad]').forEach((el) => el.removeAttribute('data-sr-grad'));
     }
   }
   // "ECharts 实例已建立"这个就绪条件下得太早了。报告页在 iframe 里是边加载边排布的：

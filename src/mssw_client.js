@@ -10,7 +10,7 @@ const path = require('path');
 const { encodePath } = require('./path_helper');
 const { pagedExportMsswAssetList } = require('./mssw_asset_paged_export');
 const {
-  removeIncidentRows,
+  removeIncidentRowsByStatus,
   parseIncidentGptStats,
   extractIncidentDirectStats,
   extractIncidentAssetInfo,
@@ -206,6 +206,28 @@ function unique(items) {
 function logInfo(logger, message) {
   if (typeof logger === 'function') {
     logger(message);
+  }
+}
+
+// 误报过滤诊断日志：既打到控制台，也追加到独立文件，便于运行后单独查阅。
+// 文件路径固定为 <diagDir>/false-positive-diagnostics.log。
+let falsePositiveDiagLogPath = '';
+function setFalsePositiveDiagLogPath(diagDir) {
+  falsePositiveDiagLogPath = path.join(diagDir, 'false-positive-diagnostics.log');
+}
+function getFalsePositiveDiagLogPath() {
+  return falsePositiveDiagLogPath;
+}
+function logFalsePositiveDiag(logger, message) {
+  logInfo(logger, message);
+  if (!falsePositiveDiagLogPath) {
+    return;
+  }
+  try {
+    const line = `[${new Date().toISOString()}] ${message}\n`;
+    fs.appendFileSync(falsePositiveDiagLogPath, line, 'utf8');
+  } catch (e) {
+    // 诊断日志写入失败不影响主流程
   }
 }
 
@@ -2338,18 +2360,25 @@ async function exportMsswIncidentList(options) {
   const downloaded = await downloadMsswIncidentFile(cookieInfo, msswBaseUrl, taskId, downloadDir, fileName, companyId);
   logInfo(logger, `MSSW 事件表: ${downloaded.filePath}`);
 
-  // 误报事件过滤：从事件表中移除已被标记为误报的事件
+  // 误报事件过滤：直接读取事件表自带的「状态说明」列，删除标记为误报的行
+  // （业务触发 / 技术误报 / 接受风险）。不再依赖接口按 status_note 拉取 ID 清单，
+  // 从而避免分页抖动、跨系统 ID 对齐等不确定因素。
   try {
-    const { begin, end } = resolveMsswTimeRange(options);
-    const startTimeMs = begin * 1000;
-    const endTimeMs = end * 1000;
-    const falsePositiveIds = await fetchMsswFalsePositiveIncidentIds(cookieInfo, msswBaseUrl, companyId, startTimeMs, endTimeMs, logger);
-    if (falsePositiveIds.length > 0) {
-      const removeResult = await removeIncidentRows(downloaded.filePath, falsePositiveIds);
-      logInfo(logger, `误报事件过滤完成: ${removeResult.message}`);
-    } else {
-      logInfo(logger, '没有误报事件需要过滤');
+    const diagDir = options.outputDir || path.join(process.cwd(), 'tmp');
+    await fsp.mkdir(diagDir, { recursive: true });
+    setFalsePositiveDiagLogPath(diagDir);
+    logFalsePositiveDiag(logger, `[误报诊断] ===== 误报事件过滤诊断开始 =====`);
+    logFalsePositiveDiag(logger, `[误报诊断] 诊断日志文件: ${getFalsePositiveDiagLogPath()}`);
+    logFalsePositiveDiag(logger, `[误报诊断] 过滤方式: 事件表「状态说明」列, 目标值=[业务触发, 技术误报, 接受风险]`);
+
+    const removeResult = await removeIncidentRowsByStatus(downloaded.filePath);
+    logInfo(logger, `误报事件过滤完成: ${removeResult.message}`);
+    logFalsePositiveDiag(logger, `[误报诊断] 删除结果: ${removeResult.message} (removed=${removeResult.removed}, totalBefore=${removeResult.totalBefore}, totalAfter=${removeResult.totalAfter})`);
+    // 诊断：输出列命中情况与逐行删除明细
+    for (const diag of removeResult.diagnostics || []) {
+      logFalsePositiveDiag(logger, `[误报诊断] ${JSON.stringify(diag)}`);
     }
+    logFalsePositiveDiag(logger, `[误报诊断] ===== 误报事件过滤诊断结束 =====`);
   } catch (error) {
     logInfo(logger, `误报事件过滤失败（不影响主流程）: ${error.message}`);
   }
