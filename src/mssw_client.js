@@ -2360,8 +2360,8 @@ async function exportMsswIncidentList(options) {
   const downloaded = await downloadMsswIncidentFile(cookieInfo, msswBaseUrl, taskId, downloadDir, fileName, companyId);
   logInfo(logger, `MSSW 事件表: ${downloaded.filePath}`);
 
-  // 误报事件过滤：直接读取事件表自带的「状态说明」列，删除标记为误报的行
-  // （业务触发 / 技术误报 / 接受风险）。不再依赖接口按 status_note 拉取 ID 清单，
+  // 误报事件过滤：直接读取事件表自带的「处置状态」列，删除标记为误报的行
+  // （已忽略）。不再依赖接口按 status_note 拉取 ID 清单，
   // 从而避免分页抖动、跨系统 ID 对齐等不确定因素。
   try {
     const diagDir = options.outputDir || path.join(process.cwd(), 'tmp');
@@ -2369,7 +2369,7 @@ async function exportMsswIncidentList(options) {
     setFalsePositiveDiagLogPath(diagDir);
     logFalsePositiveDiag(logger, `[误报诊断] ===== 误报事件过滤诊断开始 =====`);
     logFalsePositiveDiag(logger, `[误报诊断] 诊断日志文件: ${getFalsePositiveDiagLogPath()}`);
-    logFalsePositiveDiag(logger, `[误报诊断] 过滤方式: 事件表「状态说明」列, 目标值=[业务触发, 技术误报, 接受风险]`);
+    logFalsePositiveDiag(logger, `[误报诊断] 过滤方式: 事件表「处置状态」列, 目标值=[已忽略]`);
 
     const removeResult = await removeIncidentRowsByStatus(downloaded.filePath);
     logInfo(logger, `误报事件过滤完成: ${removeResult.message}`);

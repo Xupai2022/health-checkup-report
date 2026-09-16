@@ -84,8 +84,8 @@ function execPythonWithDiagnostics(scriptPath, args, label) {
   });
 }
 
-// 按事件表自带的「状态说明」列删除误报行，不依赖外部接口拉取的 ID 清单。
-// statusValues 未传时，Python 侧使用默认值：业务触发 / 技术误报 / 接受风险。
+// 按事件表自带的「处置状态」列删除误报行，不依赖外部接口拉取的 ID 清单。
+// statusValues 未传时，Python 侧使用默认值：已忽略。
 async function removeIncidentRowsByStatus(excelPath, statusValues) {
   if (!excelPath) {
     return { removed: 0, totalBefore: 0, totalAfter: 0, message: '事件表路径为空', diagnostics: [] };
@@ -94,8 +94,8 @@ async function removeIncidentRowsByStatus(excelPath, statusValues) {
   const scriptPath = path.join(__dirname, '..', 'scripts', 'remove_incident_rows.py');
   const payload = { status_values: Array.isArray(statusValues) && statusValues.length
     ? statusValues
-    : ['业务触发', '技术误报', '接受风险'] };
-  const { stdout, stderr } = await execPythonWithDiagnostics(scriptPath, [encodePath(excelPath), JSON.stringify(payload)], '按状态说明移除误报事件失败');
+    : ['已忽略'] };
+  const { stdout, stderr } = await execPythonWithDiagnostics(scriptPath, [encodePath(excelPath), JSON.stringify(payload)], '按处置状态移除误报事件失败');
   const parsed = JSON.parse(stdout);
   const diagnostics = stderr
     .split(/\r?\n/)

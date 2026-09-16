@@ -4,8 +4,8 @@
 
 两种模式（由第二个参数决定）：
   1. 按事件ID删除：第二个参数为 ID 数组 JSON，如 '["incident-xxx","incident-yyy"]'
-  2. 按状态说明删除（默认/推荐）：第二个参数为对象 JSON，如 '{"status_values":["业务触发","技术误报","接受风险"]}'
-     直接读取事件表自带的「状态说明」列，值命中即删除；不依赖外部接口拉取的ID清单。
+  2. 按「处置状态」列删除（默认/推荐）：第二个参数为对象 JSON，如 '{"status_values":["已忽略"]}'
+     直接读取事件表自带的「处置状态」列，值命中即删除；不依赖外部接口拉取的ID清单。
 
 用法: python remove_incident_rows.py <incident.xlsx> '<payload_json>'
 """
@@ -17,10 +17,10 @@ from openpyxl import load_workbook
 from _path_helper import decode_argv
 decode_argv()
 
-# 「状态说明」列可能出现的表头名（子串匹配）
-STATUS_NOTE_ALIASES = ["状态说明", "状态备注", "status_note", "statusnote"]
-# 视为误报、需要删除的状态说明文字
-DEFAULT_FALSE_POSITIVE_STATUS_VALUES = ["业务触发", "技术误报", "接受风险"]
+# 「处置状态」列可能出现的表头名（子串匹配）
+STATUS_ACTION_ALIASES = ["处置状态", "处理状态", "处置情况", "status_action", "statusaction"]
+# 视为误报、需要删除的处置状态文字
+DEFAULT_FALSE_POSITIVE_STATUS_VALUES = ["已忽略"]
 
 
 def normalize(value):
@@ -85,7 +85,7 @@ def remove_by_status_values(sheet, status_col, status_values):
             removed_count += 1
             matched_details.append({
                 "row": row_idx + 1,
-                "status_note": status_value,
+                "status_action": status_value,
             })
         else:
             rows_to_keep.append(row)
@@ -137,18 +137,18 @@ def main():
     header_row = [normalize(cell) for cell in next(sheet.iter_rows(min_row=1, max_row=1, values_only=True))]
 
     if mode == "status":
-        status_col = find_column(sheet, STATUS_NOTE_ALIASES)
+        status_col = find_column(sheet, STATUS_ACTION_ALIASES)
         print(json.dumps({
             "diag": "status_column_detection",
             "mode": "status",
-            "status_note_column_index": status_col,
-            "status_note_column_header": header_row[status_col] if status_col is not None and status_col < len(header_row) else None,
+            "status_action_column_index": status_col,
+            "status_action_column_header": header_row[status_col] if status_col is not None and status_col < len(header_row) else None,
             "target_status_values": status_values,
             "header": header_row
         }, ensure_ascii=False), file=sys.stderr)
 
         if status_col is None:
-            raise SystemExit(f"无法找到「状态说明」列 (表头: {header_row})")
+            raise SystemExit(f"无法找到「处置状态」列 (表头: {header_row})")
 
         rows_to_keep, removed_count, total_before, matched_details, status_counter = remove_by_status_values(
             sheet, status_col, status_values
@@ -165,14 +165,14 @@ def main():
         if col_index is None:
             raise SystemExit(f"无法找到事件ID列 (表头: {header_row})")
 
-        status_note_col = find_column(sheet, STATUS_NOTE_ALIASES)
+        status_note_col = find_column(sheet, STATUS_ACTION_ALIASES)
         print(json.dumps({
             "diag": "column_detection",
             "mode": "id",
             "id_column_index": col_index,
             "id_column_header": header_row[col_index] if col_index < len(header_row) else "",
-            "status_note_column_index": status_note_col,
-            "status_note_column_header": header_row[status_note_col] if status_note_col is not None and status_note_col < len(header_row) else None,
+            "status_action_column_index": status_note_col,
+            "status_action_column_header": header_row[status_note_col] if status_note_col is not None and status_note_col < len(header_row) else None,
             "header": header_row
         }, ensure_ascii=False), file=sys.stderr)
 
