@@ -7760,7 +7760,7 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
 <section class="sr-section" id="sec-risk-overview">
   <h2 class="report-page-title sr-h2">2. 风险总览</h2>
   <p class="report-body sr-p">安全体检总体评级：<span class="sr-grade sr-grade--良" data-field="sections.riskOverview.grade">良</span></p>
-  <p class="report-body sr-p" style="text-indent:2em">本次安全体检共发现 <strong>{{ riskOverview.totalRiskCount }}</strong> 项安全风险，包含 <strong>{{ riskOverview.totalEvents }}</strong> 项威胁运营产生的安全事件 与 <strong>{{ riskOverview.threatPreventionRiskCount }}</strong> 项威胁预防产生的安全风险，共涉及 <strong>{{ riskOverview.riskBusinessCount }}</strong> 个业务系统、<strong>{{ riskOverview.riskAssetCount }}</strong> 个资产。</p>
+  <p class="report-body sr-p" style="text-indent:2em">本次安全体检共发现 <strong>{{ riskOverview.totalRiskCount }}</strong> 项安全风险，包含 <strong>{{ riskOverview.totalEvents }}</strong> 项威胁运营产生的有效安全事件 与 <strong>{{ riskOverview.threatPreventionRiskCount }}</strong> 项威胁预防产生的安全风险，共涉及 <strong>{{ riskOverview.riskBusinessCount }}</strong> 个业务系统、<strong>{{ riskOverview.riskAssetCount }}</strong> 个资产。</p>
   <div class="sr-chart-slot chart-box sr-chart--no-hint" id="slot-risk-overview" data-chart="slot-risk-overview">
     <div class="sr-chart-live">
     <div class="ov4" id="exec-overview-v4">
@@ -8157,8 +8157,8 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
   <p class="report-body sr-p">【<strong>XDR平台设备接入</strong>】总计接入安全设备 <strong>{{ riskDetails.devices }}</strong> 个，其中深信服设备 <strong>{{ riskDetails.sangfor }}</strong> 个<span data-section="riskDetail.sangforDeviceBreakdown"></span>，第三方设备 <strong>{{ riskDetails.third }}</strong> 个；经深信服 AI 智能数据解析，数据全部接入 XDR 平台，总计接收安全日志 <strong>{{ riskDetails.securityLogTotal }}</strong> 条。</p>
   <p class="report-body sr-p">【<strong>AI辅助告警生成</strong>】经深信服云端 AI 智能分析，生成有效告警 <strong>{{ riskDetails.alertTotal }}</strong> 条。</p>
   <p class="report-body sr-p">【<strong>AI威胁对抗</strong>】深信服云端 AI 对威胁进行实时监测和快速遏制，遏制告警 <strong>{{ riskDetails.containedAlerts }}</strong> 起。</p>
-  <p class="report-body sr-p">【<strong>安全GPT研判</strong>】经深信服安全 GPT 研判，生成安全事件 <strong>{{ riskDetails.totalEvents }}</strong> 起（告警消减率 <strong>{{ riskDetails.alertReductionRate }}%</strong>）<span data-section="riskDetail.severeHighEventsTail"></span>。</p>
-  <p class="report-body sr-p">【<strong>云端专家7*24H持续守护</strong>】所有安全事件由云端专家结合 AI 进行 7*24H 实时响应处置。总计处置了 <strong>{{ riskDetails.closedEvents }}</strong> 起安全事件；事件平均响应时间 <strong>{{ riskDetails.AvgResponseTime }}</strong> 分钟，事件闭环率 <strong>{{ riskDetails.closeRate }}%</strong>。</p>
+  <p class="report-body sr-p">【<strong>安全GPT研判</strong>】经深信服安全 GPT 研判，生成有效安全事件 <strong>{{ riskDetails.totalEvents }}</strong> 起（告警消减率 <strong>{{ riskDetails.alertReductionRate }}%</strong>）<span data-section="riskDetail.severeHighEventsTail"></span>。</p>
+  <p class="report-body sr-p">【<strong>云端专家7*24H持续守护</strong>】所有安全事件由云端专家结合 AI 进行 7*24H 实时响应处置。总计处置了 <strong>{{ riskDetails.closedEvents }}</strong> 起有效安全事件；事件平均响应时间 <strong>{{ riskDetails.AvgResponseTime }}</strong> 分钟，事件闭环率 <strong>{{ riskDetails.closeRate }}%</strong>。</p>
 
   <div data-hide="{{ riskDetails.eventDistributionSectionHide }}">
   <h4 class="sr-h4" id="sec-event-distribution">3.2.3 安全事件分布</h4>

@@ -7,7 +7,7 @@
   // 用 ?incremental=0 可以强制关掉，方便出问题时对照。
   const INCREMENTAL_REDRAW = window.SR_EDITOR_INCREMENTAL !== false
     && new URLSearchParams(location.search).get('incremental') !== '0';
-  const state = { docx: null, docxFile: null, selectedPath: '', selectedMediaItem: null, replacements: new Map(), charts: [], activeChart: null, reportData: null, sourceHtml: '', gradeAssets: {}, media: [], mediaMetadata: new Map(), renderVersion: 0, frameLoadVersion: 0, edits: new Map(), previewBlob: null, previewPath: '', previewPending: false };
+  const state = { docx: null, docxFile: null, selectedPath: '', selectedMediaItem: null, replacements: new Map(), charts: [], activeChart: null, reportData: null, sourceHtml: '', gradeAssets: {}, media: [], mediaMetadata: new Map(), renderVersion: 0, frameLoadVersion: 0, edits: new Map(), previewBlob: null, previewPath: '', previewPending: false, previewZoom: 'fit' };
   const enc = new TextEncoder();
   const dec = new TextDecoder();
 
@@ -824,7 +824,9 @@
     holder.innerHTML = '';
     if (!active) return;
     const charts = componentCharts();
-    // 一张截图可能对应多个图表，标题只在多于一个时提示数量；具体图表名在下拉和各组标题里已经有了。
+    // 一张截图可能对应多个图表，标题只在多于一个时提示数量；具体图表名在各组标题里已经有了。
+    // （以前这里还有个 #chart-select 下拉切换主图表，但那组图表本来就是一起显示的，
+    //   activeChart 只由选中的截图决定，下拉是多余的，已删。）
     $('chart-title').textContent = charts.length > 1 ? `共 ${charts.length} 个图表` : active.title;
     charts.forEach((chart) => renderChartGroup(holder, chart));
     redrawComponent();
@@ -895,9 +897,47 @@
     const template = doc.getElementById(`tpl-${iframeId}`);
     return template ? template.textContent : '';
   }
-  function iframePreviewHtml(html) {
-    const previewStyle = '<style>html,body{width:max-content!important;height:max-content!important;min-width:100%!important;overflow:auto!important}#fit-root{width:max-content!important;height:auto!important;overflow:visible!important}#stage{transform:none!important}</style>';
-    return html.replace(/<head(\s[^>]*)?>/i, (head) => `${head}${previewStyle}`);
+  // 屏上预览的缩放模式：
+  //   actual —— 按设计原尺寸渲染。 #stage 的 !important 压掉模板可能写的 transform，
+  //             所见即导出尺寸，看板比面板宽时横向滚动。
+  //   fit —— 由这一侧算缩放（见 fitPreviewIframe），样式留空，走模板自己的 CSS。
+  // 注意不能像原先设想的那样"放开覆盖、让模板自带的 fitScale 接管"：模板里内层 <script> 的闭合
+  // 标签写成了 <\/script>（带反斜杠），HTML 解析器认不出它，整段脚本会一路吞到外层 </script>，
+  // 把 </body></html> 也吃进脚本文本里，最后 SyntaxError: Unexpected token '<'，脚本一次都不执行
+  // （探针：脚本的第二个语句 classList.add('is-embed') 从未生效）。三个看板模板都是这个情况。
+  // 这两段只注进屏上预览的 srcdoc，buildFrameHtml 从不引用，导出走的是离屏 #render-frame，碰不到。
+  const PREVIEW_ZOOM_CSS = {
+    actual: 'html,body{width:max-content!important;height:max-content!important;min-width:100%!important;overflow:auto!important}#fit-root{width:max-content!important;height:auto!important;overflow:visible!important}#stage{transform:none!important}',
+    // 运营总览那套模板自己把 html,body 设成了 overflow:hidden，内容比 iframe 视口高时既不滚也把
+    // 下面一截裁掉，永远看不到（风险总览那套是 overflow:visible，超出的部分自带滚动条，所以只有
+    // 运营总览出问题）。这里只放开纵轴：横轴由 fitPreviewIframe 的缩放保证不溢出，一起放开反而
+    // 会平白多一条横向滚动条。
+    fit: 'html,body{overflow-y:auto!important;overflow-x:hidden!important}'
+  };
+  // 样式带 id，切模式时可以就地改这段文本，不必把整帧重新渲染一遍（重渲染要重跑 html2canvas，一两秒）。
+  function iframePreviewHtml(html, zoom) {
+    const css = PREVIEW_ZOOM_CSS[zoom] || '';
+    return html.replace(/<head(\s[^>]*)?>/i, (head) => `${head}<style id="sr-preview-zoom">${css}</style>`);
+  }
+  // 把看板整体缩放到面板宽度。等价于模板 fitScale 想做的事，但有两点不同：
+  //   1. 算在这一侧——面板宽度和 stage 的原始宽度在这里都量得到，不必依赖模板那段不执行的脚本；
+  //   2. 用 Math.min(1, …) 封顶，面板比看板还宽时不会像模板那样放大到 1.5 倍以上。
+  // transform 不参与布局，所以必须同时把 #fit-root 的高度设成缩放后的高度，
+  // 否则 root 仍按未缩放的 stage 撑高，下面会留一大块空白。
+  function fitPreviewIframe(iframe) {
+    const target = iframe || $('preview').querySelector('iframe.html-iframe-preview');
+    if (state.previewZoom !== 'fit' || !target || !target.isConnected) return;
+    const doc = target.contentDocument;
+    const stage = doc && doc.getElementById('stage');
+    const root = doc && doc.getElementById('fit-root');
+    if (!stage || !root) return;
+    const natural = stage.offsetWidth;
+    const avail = root.clientWidth;
+    if (!natural || !avail) return;
+    const scale = Math.min(1, avail / natural);
+    stage.style.transformOrigin = 'top left';
+    stage.style.transform = `scale(${scale})`;
+    root.style.height = `${Math.ceil(stage.offsetHeight * scale)}px`;
   }
   function showIframePreview(html, component, chart) {
     const preview = document.createElement('iframe');
@@ -907,10 +947,24 @@
     const label = state.charts.find((item) => item.id === primaryChartId(component)) || chart;
     preview.title = `${label.title} 实时预览`;
     preview.scrolling = 'yes';
-    preview.onload = () => { applyIframeEdits(preview.contentDocument, component).catch(() => {}); };
-    preview.srcdoc = iframePreviewHtml(html);
+    preview.onload = () => {
+      // 缩放要等编辑应用完再算：时间轴那类组件会被整体重建，尺寸跟着变。
+      applyIframeEdits(preview.contentDocument, component)
+        .then(() => {
+          fitPreviewIframe(preview);
+          // 看板里有大图和 ECharts，装载后还会再长高，光靠 onload 那一量会偏。
+          // 观察 stage 本身（不是 root，root 的高度是我们自己设的，会绕成回环）；
+          // transform 不影响 border-box 尺寸，所以这里不会自激。
+          const stage = preview.contentDocument && preview.contentDocument.getElementById('stage');
+          if (stage && window.ResizeObserver) new ResizeObserver(() => fitPreviewIframe(preview)).observe(stage);
+        })
+        .catch(() => {});
+    };
+    preview.srcdoc = iframePreviewHtml(html, state.previewZoom);
     $('preview').replaceChildren(preview);
   }
+  // 面板宽度随窗口变，缩放得跟着重算；看板内容没变，不用重渲染。
+  window.addEventListener('resize', () => fitPreviewIframe());
   // html2canvas 1.4.1 有两个洞，叠在一起把看板里那几处渐变标题画成了矩形
   // （.ro5-stage-title / .ops3-grad-title："攻击概览"、"AI辅助告警生成"、"安全GPT研判+专家运营" 等）：
   //   1. 它的 background-clip 解析器只认 padding-box / content-box，`text` 落进 default 分支
@@ -1073,7 +1127,7 @@
       canvas.width = target.width;
       canvas.height = target.height;
       canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
-      return new Promise((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('看板 PNG 导出失败。')), 'image/png'));
+      return new Promise((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('看板截图失败。')), 'image/png'));
     } finally {
       stage.style.transform = previousTransform;
       root.style.width = previousRootWidth;
@@ -1395,7 +1449,7 @@
       $('preview').innerHTML = `<p>${escapeXml(error.message || '预览失败')}</p>`;
     });
   }
-  function activateChart(id) { const source = state.charts.find((chart) => chart.id === id); const edited = source && state.edits.get(source.id); state.activeChart = source ? { ...structuredClone(source), rows: edited ? structuredClone(edited) : structuredClone(source.rows) } : null; $('chart-select').value = source ? source.id : ''; renderFields(); $('apply-chart').disabled = true; }
+  function activateChart(id) { const source = state.charts.find((chart) => chart.id === id); const edited = source && state.edits.get(source.id); state.activeChart = source ? { ...structuredClone(source), rows: edited ? structuredClone(edited) : structuredClone(source.rows) } : null; renderFields(); $('apply-chart').disabled = true; }
   function replacementCountText() { return state.replacements.size ? `已加入 ${state.replacements.size} 张待导出图片。` : '尚未加入替换图片。'; }
   function selectMedia(item) {
     const component = componentForPath(item.path);
@@ -1437,10 +1491,39 @@
     const item = state.media.find((entry) => componentForPath(entry.path));
     if (item) selectMedia(item);
   }
-  function loadHtml(file) { const reader = new FileReader(); reader.onerror = () => setStatus('无法读取 HTML 文件。', 'error'); reader.onload = () => { try { state.sourceHtml = String(reader.result); resetRenderFrame(); state.gradeAssets = extractGradeAssets(state.sourceHtml); const match = state.sourceHtml.match(/window\.SECURITY_REPORT_DATA\s*=\s*([\s\S]*?);<\/script>/); if (!match) throw new Error('HTML 中未找到 SECURITY_REPORT_DATA。请选择由本项目生成的报告 HTML。'); state.reportData = JSON.parse(match[1]); state.charts = chartDefinitions(state.reportData); state.edits.clear(); if (!state.charts.length) throw new Error('该 HTML 中没有当前版本支持的图表数据。'); const select = $('chart-select'); select.innerHTML = state.charts.map((c) => `<option value="${c.id}">${escapeXml(c.title)}</option>`).join(''); select.disabled = false; select.onchange = () => activateChart(select.value); const component = componentForSelection(); if (component) activateChart(primaryChartId(component)); else selectInitialMappedMedia(); renderMedia(); setStatus(`已加载 ${state.charts.length} 个可编辑图表`, 'ok'); } catch (error) { setStatus(error.message, 'error'); } }; reader.readAsText(file, 'utf-8'); }
+  function loadHtml(file) { const reader = new FileReader(); reader.onerror = () => setStatus('无法读取 HTML 文件。', 'error'); reader.onload = () => { try { state.sourceHtml = String(reader.result); resetRenderFrame(); state.gradeAssets = extractGradeAssets(state.sourceHtml); const match = state.sourceHtml.match(/window\.SECURITY_REPORT_DATA\s*=\s*([\s\S]*?);<\/script>/); if (!match) throw new Error('HTML 中未找到 SECURITY_REPORT_DATA。请选择由本项目生成的报告 HTML。'); state.reportData = JSON.parse(match[1]); state.charts = chartDefinitions(state.reportData); state.edits.clear(); if (!state.charts.length) throw new Error('该 HTML 中没有当前版本支持的图表数据。'); const component = componentForSelection(); if (component) activateChart(primaryChartId(component)); else selectInitialMappedMedia(); renderMedia(); setStatus(`已加载 ${state.charts.length} 个可编辑图表`, 'ok'); } catch (error) { setStatus(error.message, 'error'); } }; reader.readAsText(file, 'utf-8'); }
   $('docx-file').addEventListener('change', async (event) => { const file = event.target.files[0]; if (!file) return; try { await loadDocx(file); } catch (error) { setStatus(error.message, 'error'); } });
   $('html-file').addEventListener('change', (event) => { const file = event.target.files[0]; if (!file) return; try { loadHtml(file); } catch (error) { setStatus(error.message, 'error'); } });
   $('apply-chart').addEventListener('click', async () => { try { if (!state.selectedPath) throw new Error('请先在左侧选择 Word 图片。'); state.replacements.set(state.selectedPath, await svgPng()); renderMedia(); $('mapping-hint').textContent = `已将 ${state.selectedPath} 加入本次导出。现在可在左侧选择其他图片继续编辑。${replacementCountText()}`; setStatus(`已准备 ${state.replacements.size} 张图表图片替换`, 'ok'); } catch (error) { setStatus(error.message, 'error'); } });
+  // PNG 预览是纯 CSS 切的（.preview.zoom-* 那两条），改个类就行；
+  // iframe 预览就地改那段带 id 的样式，不用重渲染——重渲染会重跑一遍 html2canvas，白等一两秒。
+  function applyPreviewZoom() {
+    const iframe = $('preview').querySelector('iframe.html-iframe-preview');
+    if (!iframe || !iframe.contentDocument) return;
+    const doc = iframe.contentDocument;
+    const style = doc.getElementById('sr-preview-zoom');
+    if (!style) return;
+    style.textContent = PREVIEW_ZOOM_CSS[state.previewZoom] || '';
+    if (state.previewZoom === 'fit') { fitPreviewIframe(iframe); return; }
+    // 回 100%：把缩放留下的行内值清掉交给样式里的 !important 接管，
+    // 单纯依赖 !important 也能赢，但留着旧值下次切回 fit 前会读到脏数据。
+    const stage = doc.getElementById('stage');
+    const root = doc.getElementById('fit-root');
+    if (stage) stage.style.transform = '';
+    if (root) root.style.height = '';
+  }
+  function setPreviewZoom(zoom) {
+    if (!(zoom in PREVIEW_ZOOM_CSS) || state.previewZoom === zoom) return;
+    state.previewZoom = zoom;
+    $('preview').classList.toggle('zoom-fit', zoom === 'fit');
+    $('preview').classList.toggle('zoom-actual', zoom === 'actual');
+    $('preview-zoom').querySelectorAll('button').forEach((button) => button.classList.toggle('active', button.dataset.zoom === zoom));
+    applyPreviewZoom();
+  }
+  $('preview-zoom').addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-zoom]');
+    if (button) setPreviewZoom(button.dataset.zoom);
+  });
   $('replace-image').addEventListener('click', () => { if (!state.selectedPath) { setStatus('请先在左侧选择 Word 图片。', 'error'); return; } $('png-file').click(); });
   $('png-file').addEventListener('change', (event) => { const file = event.target.files[0]; if (!file) return; state.replacements.set(state.selectedPath, file); renderMedia(); $('mapping-hint').textContent = `已将自选 PNG 加入 ${state.selectedPath} 的本次导出。现在可继续选择其他图片。${replacementCountText()}`; setStatus(`已准备 ${state.replacements.size} 张图片替换`, 'ok'); event.target.value = ''; });
   $('download').addEventListener('click', async () => { try { if (!state.docx || !state.docxFile) throw new Error('请先选择原始 Word 文件。'); if (!state.replacements.size) throw new Error('尚未选择任何要替换的图片。'); setStatus('正在生成新版 Word...', ''); const blob = await buildZip(state.docx, state.replacements); const base = state.docxFile.name.replace(/\.docx$/i, ''); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `${base}-图表已更新.docx`; link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 1000); setStatus(`已生成新版 Word，替换 ${state.replacements.size} 张图片`, 'ok'); } catch (error) { setStatus(error.message, 'error'); } });
