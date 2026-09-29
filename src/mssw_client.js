@@ -2709,14 +2709,14 @@ function resolveDefaultProjectTimeRangeFromResponse(response, reportGeneratedAt)
   }
 
   const serviceStartList = services
-    .map((service) => Number(service && service.billing_start_time))
+    .map((service) => Number(service && service.service_start))
     .filter((value) => Number.isFinite(value) && value > 0);
   if (!serviceStartList.length) {
-    throw new Error('MSSW 项目列表缺少有效的 billing_start_time，无法推导默认开始时间');
+    throw new Error('MSSW 项目列表缺少有效的 service_start，无法推导默认开始时间');
   }
 
   const nonNullServiceEnds = services
-    .map((service) => Number(service && service.billing_end_time))
+    .map((service) => Number(service && service.expect_end_time))
     .filter((value) => Number.isFinite(value) && value > 0);
 
   const minServiceStart = Math.min(...serviceStartList);

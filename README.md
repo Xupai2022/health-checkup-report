@@ -29,7 +29,7 @@ node health_report.js `
 - `--start` 和 `--end` 要么同时传，要么都不传
 - 都不传时，脚本会通过 MSSW 项目列表接口自动推导
 - 默认开始时间取所有 `service_info[*].service_start` 的最早值
-- 默认结束时间取 `min(报告生成时刻, 所有非空 service_end 的最小值)`
+- 默认结束时间取 `min(报告生成时刻, 所有非空 expect_end_time 的最小值)`
 
 输出文件默认写入 `output/`。接口拿到并用于填充 HTML 的结构化数据会落盘到 `output/report-data.json`，可用 `--output-json` 指定路径。
 
@@ -62,7 +62,7 @@ node health_report.js `
 | --- | --- | --- | --- |
 | `projectBackground.customerName` | 客户名称 | `--customer` | 直接取命令行参数 |
 | `projectBackground.startDate` | 报告开始日期 | `--start` / MSSW 项目列表接口 | 用户传时间时直接取命令行参数；未传时取最早 `service_start` |
-| `projectBackground.endDate` | 报告结束日期 | `--end` / MSSW 项目列表接口 + 运行时 | 用户传时间时直接取命令行参数；未传时取 `min(报告生成时刻, 最早非空 service_end)` |
+| `projectBackground.endDate` | 报告结束日期 | `--end` / MSSW 项目列表接口 + 运行时 | 用户传时间时直接取命令行参数；未传时取 `min(报告生成时刻, 最早非空 expect_end_time)` |
 | `assetLedger.core_asset` | 核心资产数 | 导出的资产表 Excel | 读取第二行表头里的 `重要级别` 列；列值非空且包含 `核心` 时计为核心资产 |
 | `assetLedger.ready_to_outbound` | 7天内即将退库资产数 | MSSW 资产台账 count 接口 | 取 `{"ready_to_outbound":{"op":"=","val":"last7d"}}` 的 `total` |
 | `assetLedger.typeDistribution` | 资产类型分布 | 导出的资产表 Excel | 读取第二行表头里的 `资产类型(一级)` 列；值包含 `服务器` 计入服务器，包含 `终端` 计入终端，其余计入其他 |
